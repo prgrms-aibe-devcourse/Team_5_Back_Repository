@@ -38,3 +38,7 @@ out/
 
 ### sensitive files ###
 .env
+
+### h2 database files ###
+db_dev.mv.db
+db_dev.trace.db
