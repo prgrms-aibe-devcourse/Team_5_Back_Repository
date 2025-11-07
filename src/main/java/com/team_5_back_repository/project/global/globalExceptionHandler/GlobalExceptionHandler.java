@@ -17,6 +17,7 @@ public class GlobalExceptionHandler {
                 new RsData(
                         "404-001",
                         "존재하지 않는 데이터에 접근했습니다."
+                        , null
                 ),
                 HttpStatus.NOT_FOUND
         );
