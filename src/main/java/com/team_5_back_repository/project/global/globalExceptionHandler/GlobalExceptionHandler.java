@@ -1,6 +1,8 @@
 package com.team_5_back_repository.project.global.globalExceptionHandler;
 
+import com.team_5_back_repository.project.domain.member.exception.MemberException;
 import com.team_5_back_repository.project.global.rsData.RsData;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -23,5 +25,10 @@ public class GlobalExceptionHandler {
         );
     }
 
-    // 추가적인 예외 핸들러들을 여기에 작성할 수 있습니다.
+    @ExceptionHandler(MemberException.class)
+    public RsData<Void> handle(MemberException e, HttpServletResponse response) {
+        RsData<Void>  rsData = e.getRsData();
+        response.setStatus(rsData.statusCode());
+        return rsData;
+    }
 }
