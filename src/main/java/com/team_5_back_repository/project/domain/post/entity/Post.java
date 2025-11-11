@@ -4,6 +4,9 @@ import com.team_5_back_repository.project.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -14,10 +17,11 @@ public class Post extends BaseEntity{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable=false)
+    @Column(length = 30, nullable=false)
     private String title;
 
     @Lob
+    @Column(nullable=false)
     private String content;
 
     private String attachmentPath;
@@ -25,10 +29,23 @@ public class Post extends BaseEntity{
     @Enumerated(EnumType.STRING)
     private PostType postType;
 
-    public void update(String title, String content, String attachmentPath, PostType postType) {
+    @ManyToMany(cascade = CascadeType.PERSIST)
+    @JoinTable(
+            name = "post_tag",
+            joinColumns = @JoinColumn(name = "post_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set<Tag> tags = new HashSet<>();
+
+    public void addTag(Tag tag) {
+        tags.add(tag);
+    }
+
+    public void update(String title, String content, String attachmentPath, PostType postType, Set<Tag> tags) {
         this.title = title;
         this.content = content;
         this.attachmentPath = attachmentPath;
         this.postType = postType;
+        this.tags = tags;
     }
 }
