@@ -27,10 +27,6 @@ public class MemberService {
                 .ifPresent(_member -> {
                     throw new MemberException("409-1", "이미 존재하는 회원입니다.");
                 });
-
-        System.out.println("asdasd" + memberJoinRequest.getPassword());
-        System.out.println("asdasd" + memberJoinRequest.getNickname());
-        System.out.println("asdasd" + memberJoinRequest.getEmail());
         memberJoinRequest.setPassword(passwordEncoder.encode(memberJoinRequest.getPassword()));
         Member savedMember = memberRepository.save(memberJoinRequest.toEntity());
         return new MemberDto(savedMember);
