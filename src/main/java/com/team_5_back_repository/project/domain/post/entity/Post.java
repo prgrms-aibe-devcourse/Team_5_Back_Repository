@@ -1,5 +1,6 @@
 package com.team_5_back_repository.project.domain.post.entity;
 
+import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -26,9 +27,15 @@ public class Post extends BaseEntity{
 
     private String attachmentPath;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
+
     @Enumerated(EnumType.STRING)
     private PostType postType;
 
+    private Long viewCount = 0L;
+    @Builder.Default
     @ManyToMany(cascade = CascadeType.PERSIST)
     @JoinTable(
             name = "post_tag",
@@ -47,5 +54,8 @@ public class Post extends BaseEntity{
         this.attachmentPath = attachmentPath;
         this.postType = postType;
         this.tags = tags;
+    }
+    public void increaseViewCount() {
+        this.viewCount += 1;
     }
 }
