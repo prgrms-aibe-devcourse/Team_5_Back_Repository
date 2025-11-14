@@ -2,8 +2,11 @@ package com.team_5_back_repository.project.domain.member.dto;
 
 import com.team_5_back_repository.project.domain.member.entity.Member;
 import jakarta.validation.constraints.NotBlank;
+import lombok.Builder;
 import lombok.Data;
 
+import java.util.UUID;
+@Builder
 @Data
 public class MemberJoinRequest {
     @NotBlank
@@ -20,6 +23,7 @@ public class MemberJoinRequest {
                 .email(this.email)
                 .password(this.password)
                 .nickname(this.nickname)
+                .apiKey(UUID.randomUUID().toString())
                 .build();
     }
 }

@@ -26,6 +26,10 @@ spring:
     console:
       enabled: true
 
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION}
+
 springdoc:
   api-docs:
     groups:
