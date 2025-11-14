@@ -66,6 +66,9 @@ public class SecurityConfig {
 
         // 허용할 헤더 설정
         configuration.setAllowedHeaders(List.of("*"));
+        
+        //읽기 허용할 헤더 설정
+        configuration.setExposedHeaders(List.of("Authorization"));
 
         // CORS 설정을 소스에 등록
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

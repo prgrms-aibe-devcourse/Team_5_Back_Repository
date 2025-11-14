@@ -37,6 +37,7 @@ public class MemberController {
         Member member = memberService.login(memberLoginRequest);
         String accessToken = memberService.genAccessToken(member);
 
+        rq.setHeader("Authorization", "Bearer " + member.getApiKey() + " " + accessToken);
         rq.setCookie("apiKey", member.getApiKey());
         rq.setCookie("accessToken", accessToken);
 
@@ -67,8 +68,8 @@ public class MemberController {
     @DeleteMapping("/logout")
     @Operation(summary = "로그아웃")
     public RsData<Void> logout() {
-        rq.setCookie("apiKey", "");
-        rq.setCookie("accessToken", "");
+        rq.deleteCookie("apiKey");
+        rq.deleteCookie("accessToken");
         return new RsData<>("203-1", "로그아웃 성공", null);
     }
 }
