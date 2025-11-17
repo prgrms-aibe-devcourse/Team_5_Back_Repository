@@ -4,6 +4,8 @@ import com.team_5_back_repository.project.domain.post.dto.PostRequest;
 import com.team_5_back_repository.project.domain.post.dto.PostResponse;
 import com.team_5_back_repository.project.domain.post.entity.PostType;
 import com.team_5_back_repository.project.domain.post.service.PostService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,8 +21,9 @@ public class PostController {
 
     private final PostService postService;
 
-    // 생성
     @PostMapping
+    @Operation(summary = "게시글 작성",
+            description = "새로운 게시글 생성 (팁 게시판은 관리자 only)")
     public ResponseEntity<Long> createPost(
             @RequestBody PostRequest request
     ) {
@@ -29,6 +32,8 @@ public class PostController {
     }
 
     @GetMapping("/{id}")
+    @Operation( summary = "게시글 조회",
+            description = "ID로 게시글 조회")
     public ResponseEntity<PostResponse> getPost(
             @PathVariable Long id,
             @RequestParam(defaultValue = "true") boolean increaseView
@@ -37,8 +42,10 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
-    // 조회
+
     @GetMapping
+    @Operation( summary = "게시글 목록 조회",
+            description = "게시글 타입별 목록 조회 (페이징 처리 가능)")
     public ResponseEntity<Page<PostResponse>> listPosts(
             @RequestParam PostType type,
             Pageable pageable
@@ -47,8 +54,9 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
-    // 업데이트
     @PutMapping("/{id}")
+    @Operation( summary = "게시글 수정",
+            description = "작성자만 게시글 수정")
     public ResponseEntity<PostResponse> updatePost(
             @PathVariable Long id,
             @RequestBody PostRequest request
@@ -59,8 +67,9 @@ public class PostController {
         );
     }
 
-    // 삭제
     @DeleteMapping("/{id}")
+    @Operation( summary = "게시글 삭제",
+            description = "작성자나 관리자만 삭제 가능")
     public ResponseEntity<Void> deletePost(
             @PathVariable Long id
 
