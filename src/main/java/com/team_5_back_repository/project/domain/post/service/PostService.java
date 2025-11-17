@@ -12,6 +12,7 @@ import com.team_5_back_repository.project.domain.post.entity.Tag;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 
@@ -32,7 +33,7 @@ public class PostService {
         Member member = (Member) memberRepository.findByNickname(username).orElseThrow(() -> new RuntimeException("사용자 없음"));
 
         PostType postType = Objects.requireNonNullElse(request.getPostType(), PostType.FREE);
-        if(postType.isAdminOnly())//추후 관리자 권한 추가 && !member.isAdmin()
+        if(postType.isAdminOnly())//추후 관리자 권한 추가 Ex) && !member.isAdmin()
         {
             throw new RuntimeException("관리자만 작성 가능");
         }
@@ -49,20 +50,49 @@ public class PostService {
         Post saved = postRepository.save(post);
         return saved.getId();
     }
-    // --- READ (상세) ---
     public PostResponse getPost(Long id, boolean increaseView) {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("게시글 없음"));
-
         if (increaseView) {
             post.increaseViewCount();
         }
-
         return PostResponse.from(post);
     }
 
+    public Page<PostResponse> listPosts(PostType postType, Pageable pageable) {
+        return postRepository.findByPostType(postType, pageable)
+                .map(PostResponse::from);
+    }
 
+    public PostResponse updatePost(Long id, PostRequest request, String username) {
+        Member member = (Member) memberRepository.findByNickname(username).orElseThrow(() -> new RuntimeException("사용자 없음"));
+        Post post = postRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("게시글 없음"));
 
+        if (!post.getMember().getId().equals(member.getId())) {
+            throw new RuntimeException("수정 권한 없음");
+        }
+        Set<Tag> tags = processTags(request.getTags());
+        post.update(
+                request.getTitle(),
+                request.getContent(),
+                request.getAttachmentPath(),
+                request.getPostType(),
+                tags
+        );
+        return PostResponse.from(post);
+    }
+
+    public  void deletePost(Long id, String username) {
+        Member member = (Member) memberRepository.findByNickname(username).orElseThrow(() -> new RuntimeException("사용자 없음"));
+        Post post = postRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("게시글 없음"));
+
+        if (!post.getMember().getId().equals(member.getId())) {
+            throw new RuntimeException("삭제 권한 없음");
+        }
+        postRepository.delete(post);
+    }
 
     private Set<Tag> processTags(Set<String> tagNames) {
         if (tagNames == null || tagNames.isEmpty()) {
