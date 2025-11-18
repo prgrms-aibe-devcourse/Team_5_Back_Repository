@@ -30,7 +30,7 @@ public class PostService {
     private final TagRepository tagRepository;
 
     public Long createPost(PostRequest request, String username) {
-        Member member = (Member) memberRepository.findByNickname(username).orElseThrow(() -> new RuntimeException("사용자 없음"));
+        Member member = memberRepository.findByNickname(username).orElseThrow(() -> new RuntimeException("사용자 없음"));
 
         PostType postType = Objects.requireNonNullElse(request.getPostType(), PostType.FREE);
         if(postType.isAdminOnly())//추후 관리자 권한 추가 Ex) && !member.isAdmin()
@@ -65,7 +65,7 @@ public class PostService {
     }
 
     public PostResponse updatePost(Long id, PostRequest request, String username) {
-        Member member = (Member) memberRepository.findByNickname(username).orElseThrow(() -> new RuntimeException("사용자 없음"));
+        Member member = memberRepository.findByNickname(username).orElseThrow(() -> new RuntimeException("사용자 없음"));
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("게시글 없음"));
 
@@ -84,7 +84,7 @@ public class PostService {
     }
 
     public  void deletePost(Long id, String username) {
-        Member member = (Member) memberRepository.findByNickname(username).orElseThrow(() -> new RuntimeException("사용자 없음"));
+        Member member = memberRepository.findByNickname(username).orElseThrow(() -> new RuntimeException("사용자 없음"));
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("게시글 없음"));
 

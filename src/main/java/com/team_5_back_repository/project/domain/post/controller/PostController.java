@@ -11,23 +11,29 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/posts/onelife")
 @RequiredArgsConstructor
-@Tag(name = "Post", description = "게시글 API")
+@Tag(name = "Post-Controller", description = "게시글 API")
 public class PostController {
 
     private final PostService postService;
 
+    private String getUsername() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication.getName();
+    }
     @PostMapping
     @Operation(summary = "게시글 작성",
             description = "새로운 게시글 생성 (팁 게시판은 관리자 only)")
     public ResponseEntity<Long> createPost(
             @RequestBody PostRequest request
     ) {
-        Long id = postService.createPost(request,  "username");
+        Long id = postService.createPost(request,  getUsername());
         return ResponseEntity.ok(id);
     }
 
