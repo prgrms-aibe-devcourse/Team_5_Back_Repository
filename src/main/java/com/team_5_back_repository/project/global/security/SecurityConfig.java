@@ -24,6 +24,9 @@ public class SecurityConfig {
 
     private final MemberService memberService;
     private final Rq rq;
+    private final CustomOAuth2LoginSuccessHandler customOAuth2LoginSuccessHandler;
+    private final CustomOAuth2AuthorizationRequestResolver customOAuth2AuthorizationRequestResolver;
+
     @Bean
     public CustomAuthenticationFilter customAuthenticationFilter() {
         return new CustomAuthenticationFilter(memberService, rq);
@@ -38,6 +41,13 @@ public class SecurityConfig {
             .logout(AbstractHttpConfigurer::disable) // 로그아웃 기능 비활성화
             .httpBasic(AbstractHttpConfigurer::disable) // HTTP Basic 인증 비활성화
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .oauth2Login(oauth2Login -> oauth2Login
+                        .successHandler(customOAuth2LoginSuccessHandler)
+                        .authorizationEndpoint(
+                                authorizationEndpoint -> authorizationEndpoint
+                                        .authorizationRequestResolver(customOAuth2AuthorizationRequestResolver)
+                        )
+                )
             .addFilterBefore(customAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
             .headers(headers -> headers
                 .frameOptions(
