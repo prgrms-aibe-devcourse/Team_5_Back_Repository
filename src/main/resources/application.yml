@@ -1,39 +1,78 @@
 spring:
-  profiles:
-    active: dev
-  output:
-    ansi:
-      enabled: always
-  datasource:
-    hikari:
-      auto-commit: false
+  application:
+    name: onelife
 
+  # 프로필 설정 (개발/운영 환경 분리)
+  profiles:
+    active: local
+
+  # 데이터베이스 설정
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/onelife_db?useSSL=false&useUnicode=true&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
+    username: onelife_user
+    password: onelife1234
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+
+  # JPA 설정
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update  # 개발 시: update, 운영 시: validate
     show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
-        highlight_sql: true
         use_sql_comments: true
+        default_batch_fetch_size: 100
+    database-platform: org.hibernate.dialect.MySQL8Dialect
 
-  config:
-    import: optional:file:.env[.properties]
+  # Redis 설정 (채팅용)
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:  # 비밀번호 없으면 비워두기
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 10
+          min-idle: 2
 
-  h2:
-    console:
+  # 파일 업로드 설정
+  servlet:
+    multipart:
       enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
 
-springdoc:
-  api-docs:
-    groups:
-      enabled: true
-  default-produces-media-type: application/json;charset=UTF-8
-  cache:
-    disabled: true
-  swagger-ui:
-    enabled: true
-    tags-sorter: alpha
-    operations-sorter: alpha
+# JWT 설정
+jwt:
+  secret: JWT_SECRET
+  access-token-validity: 3600000    # 1시간 (밀리초)
+  refresh-token-validity: 604800000 # 7일 (밀리초)
+
+# 서버 포트
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+    encoding:
+      charset: UTF-8
+      force: true
+
+# 로깅 설정
+logging:
+  level:
+    root: INFO
+    com.onelife: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.web.socket: DEBUG
+
+# WebSocket 설정
+websocket:
+  allowed-origins: http://localhost:3000  # Next.js 개발 서버 주소
