@@ -4,18 +4,13 @@ spring:
 
   # 프로필 설정 (개발/운영 환경 분리)
   profiles:
-    active: local
-
-  # 데이터베이스 설정
+    active: dev
+  output:
+    ansi:
+      enabled: always
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/onelife_db?useSSL=false&useUnicode=true&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
-    username: onelife_user
-    password: onelife1234
     hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      connection-timeout: 30000
+      auto-commit: false
 
   # JPA 설정
   jpa:
@@ -24,10 +19,10 @@ spring:
     show-sql: true
     properties:
       hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
+        highlight_sql: true
         use_sql_comments: true
-        default_batch_fetch_size: 100
-    database-platform: org.hibernate.dialect.MySQL8Dialect
 
   # Redis 설정 (채팅용)
   data:
@@ -42,37 +37,41 @@ spring:
           max-idle: 10
           min-idle: 2
 
-  # 파일 업로드 설정
-  servlet:
-    multipart:
+  h2:
+    console:
       enabled: true
-      max-file-size: 10MB
-      max-request-size: 10MB
 
-# JWT 설정
-jwt:
-  secret: JWT_SECRET
-  access-token-validity: 3600000    # 1시간 (밀리초)
-  refresh-token-validity: 604800000 # 7일 (밀리초)
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION}
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${OAUTH_KAKAO_CLIENT_ID}
+            scope: profile_nickname, profile_image
+            client-name: Kakao
+            authorization-grant-type: authorization_code
+            redirect-uri: '{baseUrl}/{action}/oauth2/code/{registrationId}'
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
 
-# 서버 포트
 server:
-  port: 8080
-  servlet:
-    context-path: /api
-    encoding:
-      charset: UTF-8
-      force: true
+  forward-headers-strategy: native
 
-# 로깅 설정
-logging:
-  level:
-    root: INFO
-    com.onelife: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-    org.springframework.web.socket: DEBUG
-
-# WebSocket 설정
-websocket:
-  allowed-origins: http://localhost:3000  # Next.js 개발 서버 주소
+springdoc:
+  api-docs:
+    groups:
+      enabled: true
+  default-produces-media-type: application/json;charset=UTF-8
+  cache:
+    disabled: true
+  swagger-ui:
+    enabled: true
+    tags-sorter: alpha
+    operations-sorter: alpha
