@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Transactional(readOnly = true)
@@ -65,4 +66,34 @@ public class MemberService {
     public String genAccessToken(Member member) {
         return authTokenService.genAccessToken(member);
     }
+
+    @Transactional
+    public Member joinOrModify(String username, String password, String nickname) {
+        Member member = memberRepository.findByEmail(username).orElse(null);
+        if (member == null) {
+            Member newMember = Member.builder()
+                    .email(username)
+                    .password(password)
+                    .nickname(nickname)
+                    .apiKey(UUID.randomUUID().toString())
+                    .build();
+            return memberRepository.save(newMember);
+        } else {
+            return modifyMember(member, nickname, null);
+        }
+    }
+
+    @Transactional
+    public Member modifyMember(Member member, String nickname, String introduction) {
+        if(introduction != null)
+            member.setIntroduction(introduction);
+        if(nickname != null)
+            member.setNickname(nickname);
+        return memberRepository.save(member);
+    }
+
+    public Optional<Member> findById(long id) {
+        return memberRepository.findById(id);
+    }
+
 }
