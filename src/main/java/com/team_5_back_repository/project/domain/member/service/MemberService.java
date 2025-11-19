@@ -56,6 +56,10 @@ public class MemberService {
         return new MemberDto(savedMember);
     }
 
+    public boolean isNicknameAvailable(String nickname) {
+        return memberRepository.findByNickname(nickname).isEmpty();
+    }
+
     public Member login(MemberLoginRequest memberLoginRequest) {
         return memberRepository.findByEmail(memberLoginRequest.getEmail())
                 .map(member -> {

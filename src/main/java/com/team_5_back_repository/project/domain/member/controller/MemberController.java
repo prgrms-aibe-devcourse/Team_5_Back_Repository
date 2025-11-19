@@ -32,6 +32,17 @@ public class MemberController {
         return new RsData<>("201-1", "회원가입 성공", memberDto);
     }
 
+    @Transactional(readOnly = true)
+    @GetMapping("/check-nickname")
+    @Operation(summary = "닉네임 중복 확인", description = "닉네임이 이미 사용 중인지 확인합니다.")
+    public RsData<Boolean> checkNickname(@RequestParam String nickname) {
+        boolean isAvailable = memberService.isNicknameAvailable(nickname);
+        if (isAvailable) {
+            return new RsData<>("200-1", "사용 가능한 닉네임입니다.", true);
+        }
+        return new RsData<>("409-1", "이미 사용 중인 닉네임입니다.", false);
+    }
+
     @Transactional
     @PostMapping("/login")
     @Operation(summary = "로그인", description = "기존 사용자가 시스템에 로그인합니다.")
