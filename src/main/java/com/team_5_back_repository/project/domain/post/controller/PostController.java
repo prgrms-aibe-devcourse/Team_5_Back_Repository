@@ -4,9 +4,11 @@ import com.team_5_back_repository.project.domain.post.dto.PostRequest;
 import com.team_5_back_repository.project.domain.post.dto.PostResponse;
 import com.team_5_back_repository.project.domain.post.entity.PostType;
 import com.team_5_back_repository.project.domain.post.service.PostService;
+import com.team_5_back_repository.project.global.rsData.RsData;
 import com.team_5_back_repository.project.global.security.SecurityUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,53 +35,59 @@ public class PostController {
     @PostMapping
     @Operation(summary = "게시글 작성",
             description = "새로운 게시글 생성 (팁 게시판은 관리자 only)")
-    public ResponseEntity<Long> createPost(@Valid @RequestBody PostRequest request) {
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "작성 성공")
+    })
+    public ResponseEntity<RsData<Long>> createPost(@Valid @RequestBody PostRequest request) {
         Long memberId = getCurrentMemberId();
         Long id = postService.createPost(request,  memberId);
-        return ResponseEntity.ok(id);
+        return ResponseEntity.ok( new RsData<>("200-1", "게시글 작성 성공", id));
     }
 
     @GetMapping("/{id}")
     @Operation( summary = "게시글 조회",
             description = "ID로 게시글 조회")
-    public ResponseEntity<PostResponse> getPost(
+    public ResponseEntity<RsData<PostResponse>> getPost(
             @PathVariable Long id,
             @RequestParam(defaultValue = "true") boolean increaseView
     ) {
         PostResponse response = postService.getPost(id, increaseView);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok( new RsData<>("200-1", "조회 성공", response));
     }
 
 
     @GetMapping
     @Operation( summary = "게시글 목록 조회",
             description = "게시글 타입별 목록 조회 (페이징 처리 가능)")
-    public ResponseEntity<Page<PostResponse>> listPosts(
+    public ResponseEntity<RsData<Page<PostResponse>>> listPosts(
             @RequestParam PostType type,
             Pageable pageable
     ) {
         Page<PostResponse> response = postService.listPosts(type, pageable);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(new RsData<>("200-1", "목록 조회 성공", response));
     }
 
     @PutMapping("/{id}")
     @Operation( summary = "게시글 수정",
             description = "작성자만 게시글 수정")
-    public ResponseEntity<PostResponse> updatePost(
+    public ResponseEntity<RsData<PostResponse>> updatePost(
             @PathVariable Long id,
-            @RequestBody PostRequest request
+            @Valid @RequestBody PostRequest request
     ) {
         Long memberId = getCurrentMemberId();
-        return ResponseEntity.ok(postService.updatePost(id, request, memberId)
+
+        return ResponseEntity.ok(
+                new RsData<>("200-1", "수정 성공",postService.updatePost(id, request, memberId))
         );
     }
 
     @DeleteMapping("/{id}")
     @Operation( summary = "게시글 삭제",
             description = "작성자나 관리자만 삭제 가능")
-    public ResponseEntity<Void> deletePost(@PathVariable Long id) {
+    public ResponseEntity<RsData<Long>> deletePost(@PathVariable Long id) {
         Long memberId = getCurrentMemberId();
-        postService.deletePost(id,  memberId);
-        return ResponseEntity.noContent().build();
+        postService.deletePost(id, memberId);
+
+        return ResponseEntity.ok(new RsData<>("200-1", "삭제 성공", id));
     }
 }
