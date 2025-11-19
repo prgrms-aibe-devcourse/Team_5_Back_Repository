@@ -4,9 +4,11 @@ import com.team_5_back_repository.project.domain.post.dto.PostRequest;
 import com.team_5_back_repository.project.domain.post.dto.PostResponse;
 import com.team_5_back_repository.project.domain.post.entity.PostType;
 import com.team_5_back_repository.project.domain.post.service.PostService;
+import com.team_5_back_repository.project.global.security.SecurityUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,17 +25,17 @@ public class PostController {
 
     private final PostService postService;
 
-    private String getUsername() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication.getName();
+    private Long getCurrentMemberId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        SecurityUser user = (SecurityUser) auth.getPrincipal(); // SecurityUser에 id 포함
+        return user.getId();
     }
     @PostMapping
     @Operation(summary = "게시글 작성",
             description = "새로운 게시글 생성 (팁 게시판은 관리자 only)")
-    public ResponseEntity<Long> createPost(
-            @RequestBody PostRequest request
-    ) {
-        Long id = postService.createPost(request,  getUsername());
+    public ResponseEntity<Long> createPost(@Valid @RequestBody PostRequest request) {
+        Long memberId = getCurrentMemberId();
+        Long id = postService.createPost(request,  memberId);
         return ResponseEntity.ok(id);
     }
 
@@ -66,21 +68,18 @@ public class PostController {
     public ResponseEntity<PostResponse> updatePost(
             @PathVariable Long id,
             @RequestBody PostRequest request
-
     ) {
-        return ResponseEntity.ok(
-                postService.updatePost(id, request, "username")
+        Long memberId = getCurrentMemberId();
+        return ResponseEntity.ok(postService.updatePost(id, request, memberId)
         );
     }
 
     @DeleteMapping("/{id}")
     @Operation( summary = "게시글 삭제",
             description = "작성자나 관리자만 삭제 가능")
-    public ResponseEntity<Void> deletePost(
-            @PathVariable Long id
-
-    ) {
-        postService.deletePost(id, "username");
+    public ResponseEntity<Void> deletePost(@PathVariable Long id) {
+        Long memberId = getCurrentMemberId();
+        postService.deletePost(id,  memberId);
         return ResponseEntity.noContent().build();
     }
 }
