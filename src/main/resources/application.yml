@@ -60,3 +60,6 @@ springdoc:
     enabled: true
     tags-sorter: alpha
     operations-sorter: alpha
+
+region:
+  secret-key: ${REGION_API_KEY}
