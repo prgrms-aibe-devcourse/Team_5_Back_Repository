@@ -56,7 +56,7 @@ public class ReviewService {
     public ReviewDto update(Long reviewId, int rating, String content, Long memberId) {
         if (rating < 1 || rating > 5) throw new IllegalArgumentException("rating must be 1~5");
 
-        Review review = reviewRepository.findById(reviewId)
+        Review review = reviewRepository.findWithRelationsById(reviewId)
                 .orElseThrow(() -> new NoSuchElementException("review not found"));
         if (!review.getMember().getId().equals(memberId)) {
             throw new SecurityException("not owner");
@@ -71,7 +71,7 @@ public class ReviewService {
     }
 
     public void delete(Long reviewId, Long memberId) {
-        Review review = reviewRepository.findById(reviewId)
+        Review review = reviewRepository.findWithRelationsById(reviewId)
                 .orElseThrow(() -> new NoSuchElementException("review not found"));
         if (!review.getMember().getId().equals(memberId)) {
             throw new SecurityException("not owner");
