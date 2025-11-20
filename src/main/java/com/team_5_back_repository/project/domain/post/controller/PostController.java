@@ -29,7 +29,10 @@ public class PostController {
 
     private Long getCurrentMemberId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        SecurityUser user = (SecurityUser) auth.getPrincipal(); // SecurityUser에 id 포함
+        if (auth == null || !(auth.getPrincipal() instanceof SecurityUser)) {
+            throw new RuntimeException("인증 정보가 없습니다.");
+        }
+        SecurityUser user = (SecurityUser) auth.getPrincipal();
         return user.getId();
     }
     @PostMapping
@@ -84,10 +87,10 @@ public class PostController {
     @DeleteMapping("/{id}")
     @Operation( summary = "게시글 삭제",
             description = "작성자나 관리자만 삭제 가능")
-    public ResponseEntity<RsData<Long>> deletePost(@PathVariable Long id) {
+    public ResponseEntity<Void> deletePost(@PathVariable Long id) {
         Long memberId = getCurrentMemberId();
         postService.deletePost(id, memberId);
 
-        return ResponseEntity.ok(new RsData<>("200-1", "삭제 성공", id));
+        return ResponseEntity.noContent().build();
     }
 }
