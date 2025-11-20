@@ -1,5 +1,6 @@
-package com.team_5_back_repository.project.domain.member.dto;
+package com.team_5_back_repository.project.domain.member.dto.request;
 
+import com.team_5_back_repository.project.domain.member.dto.dto.RegionDto;
 import com.team_5_back_repository.project.domain.member.entity.Member;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

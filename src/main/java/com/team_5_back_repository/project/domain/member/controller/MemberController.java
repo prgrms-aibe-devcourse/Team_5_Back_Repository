@@ -1,9 +1,9 @@
 package com.team_5_back_repository.project.domain.member.controller;
 
-import com.team_5_back_repository.project.domain.member.dto.MemberDto;
-import com.team_5_back_repository.project.domain.member.dto.MemberJoinRequest;
-import com.team_5_back_repository.project.domain.member.dto.MemberLoginRequest;
-import com.team_5_back_repository.project.domain.member.dto.MemberLoginResponse;
+import com.team_5_back_repository.project.domain.member.dto.dto.MemberDto;
+import com.team_5_back_repository.project.domain.member.dto.request.MemberJoinRequest;
+import com.team_5_back_repository.project.domain.member.dto.request.MemberLoginRequest;
+import com.team_5_back_repository.project.domain.member.dto.response.MemberLoginResponse;
 import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.member.exception.MemberException;
 import com.team_5_back_repository.project.domain.member.service.MemberService;

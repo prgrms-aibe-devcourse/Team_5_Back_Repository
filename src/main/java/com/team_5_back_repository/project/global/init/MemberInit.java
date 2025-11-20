@@ -1,10 +1,7 @@
 package com.team_5_back_repository.project.global.init;
 
-import com.team_5_back_repository.project.domain.member.dto.MemberDto;
-import com.team_5_back_repository.project.domain.member.dto.MemberJoinRequest;
-import com.team_5_back_repository.project.domain.member.dto.RegionDto;
-import com.team_5_back_repository.project.domain.member.entity.Member;
-import com.team_5_back_repository.project.domain.member.entity.Region;
+import com.team_5_back_repository.project.domain.member.dto.request.MemberJoinRequest;
+import com.team_5_back_repository.project.domain.member.dto.dto.RegionDto;
 import com.team_5_back_repository.project.domain.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,6 +1,7 @@
 package com.team_5_back_repository.project.global.globalExceptionHandler;
 
 import com.team_5_back_repository.project.domain.member.exception.MemberException;
+import com.team_5_back_repository.project.global.redis.UnAuthenticationException;
 import com.team_5_back_repository.project.global.rsData.RsData;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
@@ -27,6 +28,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MemberException.class)
     public RsData<Void> handle(MemberException e, HttpServletResponse response) {
+        RsData<Void>  rsData = e.getRsData();
+        response.setStatus(rsData.statusCode());
+        return rsData;
+    }
+
+    @ExceptionHandler(UnAuthenticationException.class)
+    public RsData<Void> handle(UnAuthenticationException e, HttpServletResponse response) {
         RsData<Void>  rsData = e.getRsData();
         response.setStatus(rsData.statusCode());
         return rsData;
