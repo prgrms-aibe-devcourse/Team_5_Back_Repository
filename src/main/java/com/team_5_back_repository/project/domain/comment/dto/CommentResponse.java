@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Getter
 @AllArgsConstructor
@@ -16,8 +17,16 @@ public class CommentResponse {
     private Long memberId;
     private String memberNickname;
     private String content;
+    private boolean deleted;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public String getContent() {
+        return Optional.of(deleted)
+                .filter(d -> d)
+                .map(d -> "삭제된 댓글입니다.")
+                .orElse(content);
+    }
 
     public static CommentResponse from(Comment comment) {
         return CommentResponse.builder()
@@ -26,6 +35,7 @@ public class CommentResponse {
                 .memberId(comment.getMember().getId())
                 .memberNickname(comment.getMember().getNickname())
                 .content(comment.getContent())
+                .deleted(comment.isDeleted())
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .build();
