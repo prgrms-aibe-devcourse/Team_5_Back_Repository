@@ -32,7 +32,7 @@ public class Comment extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
-    private Post post;  //게시글 타입
+    private Post post;
 
     private boolean deleted = false;
 
@@ -43,7 +43,7 @@ public class Comment extends BaseEntity {
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
     private List<Comment> replies = new ArrayList<>();
 
-    public void updateContent(String content) {
+    public void update(String content) {
         this.content = content;
     }
 
