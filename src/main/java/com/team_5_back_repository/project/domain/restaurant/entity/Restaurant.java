@@ -50,7 +50,6 @@ public class Restaurant extends BaseEntity {
 
     public void applyUpdatedRating(int oldRating, int newRating) {
         if (reviewCount <= 0) {
-            // 비정상 상태 방어
             reviewCount = 0;
             averageRating = 0.0;
             return;

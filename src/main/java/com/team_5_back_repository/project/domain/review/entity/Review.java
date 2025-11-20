@@ -26,7 +26,7 @@ public class Review extends BaseEntity {
     private Member member;
 
     @Column(nullable = false)
-    private int rating; // 1~5
+    private int rating;
 
     @Column(nullable = false, length = 1000)
     private String content;
