@@ -36,9 +36,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UnAuthenticationException.class)
     public RsData<Void> handle(UnAuthenticationException e, HttpServletResponse response) {
-        RsData<Void>  rsData = e.getRsData();
+        RsData<Void> rsData = e.getRsData();
         response.setStatus(rsData.statusCode());
         return rsData;
+    }
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<RsData<Void>> handle(IllegalArgumentException e) {
         return new ResponseEntity<>(
