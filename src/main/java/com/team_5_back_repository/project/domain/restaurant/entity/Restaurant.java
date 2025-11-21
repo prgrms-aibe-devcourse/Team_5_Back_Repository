@@ -48,6 +48,27 @@ public class Restaurant extends BaseEntity {
         averageRating = total / reviewCount;
     }
 
+    public void applyUpdatedRating(int oldRating, int newRating) {
+        if (reviewCount <= 0) {
+            reviewCount = 0;
+            averageRating = 0.0;
+            return;
+        }
+        double total = averageRating * reviewCount - oldRating + newRating;
+        averageRating = total / reviewCount;
+    }
+
+    public void applyDeletedRating(int oldRating) {
+        if (reviewCount <= 1) {
+            reviewCount = 0;
+            averageRating = 0.0;
+            return;
+        }
+        double total = averageRating * reviewCount - oldRating;
+        reviewCount -= 1;
+        averageRating = total / reviewCount;
+    }
+
     public void update(String name, String phone, String jibunAddress, String roadAddress,
                        double latitude, double longitude) {
         this.name = name;
