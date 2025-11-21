@@ -1,6 +1,7 @@
 package com.team_5_back_repository.project.global.globalExceptionHandler;
 
 import com.team_5_back_repository.project.domain.member.exception.MemberException;
+import com.team_5_back_repository.project.global.redis.UnAuthenticationException;
 import com.team_5_back_repository.project.global.rsData.RsData;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
@@ -33,6 +34,11 @@ public class GlobalExceptionHandler {
         return rsData;
     }
 
+    @ExceptionHandler(UnAuthenticationException.class)
+    public RsData<Void> handle(UnAuthenticationException e, HttpServletResponse response) {
+        RsData<Void>  rsData = e.getRsData();
+        response.setStatus(rsData.statusCode());
+        return rsData;
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<RsData<Void>> handle(IllegalArgumentException e) {
         return new ResponseEntity<>(

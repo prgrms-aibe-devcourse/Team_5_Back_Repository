@@ -1,6 +1,6 @@
 package com.team_5_back_repository.project.domain.member.service;
 
-import com.team_5_back_repository.project.domain.member.dto.RegionDto;
+import com.team_5_back_repository.project.domain.member.dto.dto.RegionDto;
 import com.team_5_back_repository.project.domain.member.entity.Region;
 import com.team_5_back_repository.project.domain.member.repository.RegionRepository;
 import lombok.RequiredArgsConstructor;

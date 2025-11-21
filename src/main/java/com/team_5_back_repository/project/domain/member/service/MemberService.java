@@ -1,18 +1,19 @@
 package com.team_5_back_repository.project.domain.member.service;
 
-import com.team_5_back_repository.project.domain.member.dto.*;
+import com.team_5_back_repository.project.domain.member.dto.dto.MemberDto;
+import com.team_5_back_repository.project.domain.member.dto.dto.RegionDto;
+import com.team_5_back_repository.project.domain.member.dto.request.MemberJoinRequest;
+import com.team_5_back_repository.project.domain.member.dto.request.MemberLoginRequest;
 import com.team_5_back_repository.project.domain.member.entity.ActivityRegion;
 import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.member.entity.Region;
 import com.team_5_back_repository.project.domain.member.exception.MemberException;
 import com.team_5_back_repository.project.domain.member.repository.MemberRepository;
-import com.team_5_back_repository.project.domain.member.repository.RegionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -54,6 +55,14 @@ public class MemberService {
         }
         Member savedMember = memberRepository.save(member);
         return new MemberDto(savedMember);
+    }
+
+    public boolean isEmailAvailable(String email) {
+        return memberRepository.findByEmail(email).isEmpty();
+    }
+
+    public boolean isNicknameAvailable(String nickname) {
+        return memberRepository.findByNickname(nickname).isEmpty();
     }
 
     public Member login(MemberLoginRequest memberLoginRequest) {

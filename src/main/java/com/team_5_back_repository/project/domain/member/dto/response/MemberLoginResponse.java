@@ -1,4 +1,4 @@
-package com.team_5_back_repository.project.domain.member.dto;
+package com.team_5_back_repository.project.domain.member.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

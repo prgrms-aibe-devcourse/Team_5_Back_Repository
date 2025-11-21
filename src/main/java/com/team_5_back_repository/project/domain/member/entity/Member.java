@@ -32,7 +32,7 @@ public class Member extends BaseEntity {
     private String nickname;
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ActivityRegion> activityRegions = new ArrayList<>(); //NullPointerException 방지
+    private List<ActivityRegion> activityRegions;
 
     @Setter
     private String introduction;
