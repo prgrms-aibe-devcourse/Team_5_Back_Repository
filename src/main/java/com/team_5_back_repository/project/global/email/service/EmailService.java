@@ -20,7 +20,7 @@ public class EmailService {
     private final RedisService redisService;
 
     private static final String EMAIL_TITLE = "OneLife 인증 번호 안내 이메일입니다.";
-    private static final String EMAIL_CONTENT_TEMPLATE = "아래의 인증번호를 입력하여 회원가입을 완료해주세요.\n"+
+    private static final String EMAIL_CONTENT_TEMPLATE = "아래의 인증번호를 입력해 주세요.\n"+
             "인증번호 : %d";
 
     public void sendEmail(String toEmail) throws MessagingException {
