@@ -40,8 +40,14 @@ public class MemberInit {
         regionDto.setSmall("신영동");
         regionDto.setFull("서울특별시 종로구 신영동");
 
+        RegionDto regionDto2 = new RegionDto();
+        regionDto2.setCode("11110120");
+        regionDto2.setSmall("신문로1가");
+        regionDto2.setFull("서울특별시 종로구 신문로1가");
+
         List<RegionDto> regionDtoList = new ArrayList<>();
         regionDtoList.add(regionDto);
+        regionDtoList.add(regionDto2);
 
         memberService.join(
                 MemberJoinRequest.builder()

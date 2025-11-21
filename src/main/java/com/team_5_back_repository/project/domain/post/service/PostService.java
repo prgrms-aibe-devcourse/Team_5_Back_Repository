@@ -117,4 +117,9 @@ public class PostService {
         }
         return tags;
     }
+
+    // 멤버 별 게시글 수 조회 (마이 페이지 등에서 사용)
+    public Long countPostsByMember(Member member) {
+        return postRepository.countByMember(member);
+    }
 }
