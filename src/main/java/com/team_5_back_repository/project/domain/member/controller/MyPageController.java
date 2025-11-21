@@ -4,7 +4,6 @@ import com.team_5_back_repository.project.domain.member.dto.dto.MemberDto;
 import com.team_5_back_repository.project.domain.member.dto.dto.MemberEditDto;
 import com.team_5_back_repository.project.domain.member.dto.dto.MyPageDto;
 import com.team_5_back_repository.project.domain.member.dto.request.MemberEditRequest;
-import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

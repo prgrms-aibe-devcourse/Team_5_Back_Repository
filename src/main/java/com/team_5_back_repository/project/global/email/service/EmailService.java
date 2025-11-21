@@ -34,7 +34,6 @@ public class EmailService {
         try {
             emailSender.send(message);
         } catch (RuntimeException e) {
-            e.printStackTrace(); // 또는 로거를 사용하여 상세한 예외 정보 로깅
             throw new RuntimeException("Unable to send email in sendEmail", e); // 원인 예외를 포함시키기
         }
     }
