@@ -7,6 +7,7 @@ import com.team_5_back_repository.project.domain.member.dto.request.MemberEditRe
 import com.team_5_back_repository.project.domain.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +37,7 @@ public class MyPageController {
     @Transactional
     @PutMapping("/{id}")
     @Operation(summary = "마이페이지 수정", description = "회원이 자신의 정보를 수정합니다.")
-    public MemberDto editMyPage(@PathVariable Long id, @RequestBody MemberEditRequest memberEditRequest) {
+    public MemberDto editMyPage(@PathVariable Long id,@Valid @RequestBody MemberEditRequest memberEditRequest) {
         return memberService.modifyMember(id, memberEditRequest);
     }
 }
