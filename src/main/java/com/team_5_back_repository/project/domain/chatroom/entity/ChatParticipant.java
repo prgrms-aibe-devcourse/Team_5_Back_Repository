@@ -1,5 +1,6 @@
 package com.team_5_back_repository.project.domain.chatroom.entity;
 
+import com.team_5_back_repository.project.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -25,8 +26,9 @@ public class ChatParticipant {
     @Column(nullable = false, name = "chat_room_id")
     private Long chatRoomId;
 
-    @Column(nullable = false, name = "member_id")
-    private Long memberId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
     @Column(nullable = false)
     private Boolean isCreator = false;  // 방장 여부
@@ -36,9 +38,18 @@ public class ChatParticipant {
     private LocalDateTime joinedAt;
 
     @Builder
-    public ChatParticipant(Long chatRoomId, Long memberId, Boolean isCreator) {
+    public ChatParticipant(Long chatRoomId, Member member, Boolean isCreator) {
         this.chatRoomId = chatRoomId;
-        this.memberId = memberId;
+        this.member = member;
         this.isCreator = isCreator;
+    }
+
+    // 편의 메서드 추가 (기존 코드 호환성 유지)
+    public Long getMemberId() {
+        return member != null ? member.getId() : null;
+    }
+
+    public String getMemberNickname() {
+        return member != null ? member.getNickname() : null;
     }
 }

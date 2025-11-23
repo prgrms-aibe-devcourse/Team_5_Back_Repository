@@ -1,21 +1,20 @@
 spring:
-  application:
-    name: onelife
-
-  # 프로필 설정 (개발/운영 환경 분리)
   profiles:
     active: dev
   output:
     ansi:
       enabled: always
   datasource:
-    hikari:
-      auto-commit: false
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/onelife_db?useSSL=false&useUnicode=true&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
+  hikari:
+    auto-commit: false
 
-  # JPA 설정
   jpa:
     hibernate:
-      ddl-auto: update  # 개발 시: update, 운영 시: validate
+      ddl-auto: create
     show-sql: true
     properties:
       hibernate:
@@ -36,6 +35,9 @@ spring:
           max-active: 10
           max-idle: 10
           min-idle: 2
+
+  config:
+    import: optional:file:.env[.properties]
 
   h2:
     console:

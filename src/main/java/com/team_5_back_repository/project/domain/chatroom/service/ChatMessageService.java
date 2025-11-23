@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ public class ChatMessageService {
     private final ChatMessageRepository messageRepository;
     private final ChatParticipantRepository participantRepository;
     private final RedisChatService redisChatService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     /**
      * 메시지 전송 및 저장
@@ -97,7 +99,7 @@ public class ChatMessageService {
     }
 
     /**
-     * 입장 메시지 자동 생성
+     * 입장 메시지 자동 생성 + WebSocket 브로드캐스트
      */
     @Transactional
     public ChatMessageResponse createEnterMessage(Long chatRoomId, Long memberId, String nickname) {
@@ -112,14 +114,22 @@ public class ChatMessageService {
         ChatMessage saved = messageRepository.save(enterMessage);
         ChatMessageResponse response = ChatMessageResponse.from(saved);
 
+        // Redis 저장
         redisChatService.saveMessage(chatRoomId, response);
         redisChatService.addParticipant(chatRoomId, memberId);
+
+        // WebSocket 브로드캐스트 (모든 구독자에게 전송)
+        String destination = "/topic/chatroom/" + chatRoomId;
+        messagingTemplate.convertAndSend(destination, response);
+
+        log.info("✅ 입장 메시지 전송 완료: chatRoomId={}, nickname={}, destination={}",
+                chatRoomId, nickname, destination);
 
         return response;
     }
 
     /**
-     * 퇴장 메시지 자동 생성
+     * 퇴장 메시지 자동 생성 + WebSocket 브로드캐스트
      */
     @Transactional
     public ChatMessageResponse createLeaveMessage(Long chatRoomId, Long memberId, String nickname) {
@@ -134,8 +144,16 @@ public class ChatMessageService {
         ChatMessage saved = messageRepository.save(leaveMessage);
         ChatMessageResponse response = ChatMessageResponse.from(saved);
 
+        // Redis 저장
         redisChatService.saveMessage(chatRoomId, response);
         redisChatService.removeParticipant(chatRoomId, memberId);
+
+        // WebSocket 브로드캐스트 (모든 구독자에게 전송)
+        String destination = "/topic/chatroom/" + chatRoomId;
+        messagingTemplate.convertAndSend(destination, response);
+
+        log.info("✅ 퇴장 메시지 전송 완료: chatRoomId={}, nickname={}, destination={}",
+                chatRoomId, nickname, destination);
 
         return response;
     }

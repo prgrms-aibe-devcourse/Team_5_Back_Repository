@@ -107,7 +107,6 @@ public class ChatMessageController {
 
     /**
      * WebSocket 세션에서 사용자 ID 추출
-     * TODO: JWT 토큰 검증으로 변경 필요
      */
     private Long getUserIdFromSession(SimpMessageHeaderAccessor headerAccessor) {
         Object userId = headerAccessor.getSessionAttributes().get("userId");

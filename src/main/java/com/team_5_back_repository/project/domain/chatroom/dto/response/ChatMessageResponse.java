@@ -2,14 +2,21 @@ package com.team_5_back_repository.project.domain.chatroom.dto.response;
 
 import com.team_5_back_repository.project.domain.chatroom.entity.ChatMessage;
 import com.team_5_back_repository.project.domain.chatroom.entity.ChatMessage.MessageType;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Getter
 @Builder
-public class ChatMessageResponse {
+@NoArgsConstructor
+@AllArgsConstructor
+public class ChatMessageResponse implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private Long id;
     private Long chatRoomId;

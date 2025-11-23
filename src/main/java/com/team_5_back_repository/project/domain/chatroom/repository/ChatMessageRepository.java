@@ -16,4 +16,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     // 채팅방의 최근 N개 메시지 조회
     List<ChatMessage> findTop50ByChatRoomIdOrderByCreatedAtDesc(Long chatRoomId);
+
+    // 채팅방의 모든 메시지 삭제 (채팅방 삭제 시 사용)
+    void deleteByChatRoomId(Long chatRoomId);
 }

@@ -29,7 +29,7 @@ public class ChatRoom {
     private ChatRoomType type;  // 소모임 or 공동구매
 
     @Column(nullable = false)
-    private Long creatorId;  // 채팅방 생성자 ID
+    private Long creatorId;  // 채팅방 생성자 ID (방장)
 
     @Column(nullable = false)
     private String region;  // 지역 (동 단위)
@@ -75,6 +75,11 @@ public class ChatRoom {
         if (this.currentParticipants > 0) {
             this.currentParticipants--;
         }
+    }
+
+    // 방장 변경
+    public void changeCreator(Long newCreatorId) {
+        this.creatorId = newCreatorId;
     }
 
     // 채팅방 비활성화
