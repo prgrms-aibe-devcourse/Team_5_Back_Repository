@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/posts/{postId}/likes")
 @RequiredArgsConstructor
-@Tag(name = "Post-Reaction", description = "게시글 추천/비추천 API")
+@Tag(name = "Post-Like-Controller", description = "게시글 추천/비추천 API")
 public class LikeController {
 
     private final LikeService likeService;
