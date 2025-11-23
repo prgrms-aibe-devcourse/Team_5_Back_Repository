@@ -9,7 +9,7 @@ import com.team_5_back_repository.project.domain.post.entity.PostType;
 import com.team_5_back_repository.project.domain.post.repository.PostRepository;
 import com.team_5_back_repository.project.domain.post.repository.TagRepository;
 import com.team_5_back_repository.project.domain.post.entity.Tag;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,8 +28,8 @@ public class PostService {
     private final MemberRepository memberRepository;
     private final TagRepository tagRepository;
 
-    public Long createPost(PostRequest request, String username) {
-        Member member = memberRepository.findByNickname(username).orElseThrow(() -> new RuntimeException("사용자 없음"));
+    public Long createPost(PostRequest request, Long memberId) {
+        Member member = memberRepository.findById(memberId).orElseThrow(() -> new RuntimeException("사용자 없음"));
 
         PostType postType = Objects.requireNonNullElse(request.getPostType(), PostType.FREE);
         if(postType.isAdminOnly())//추후 관리자 권한 추가 Ex) && !member.isAdmin()
@@ -42,6 +41,7 @@ public class PostService {
         Post post = Post.builder()
                 .title(request.getTitle())
                 .content(request.getContent())
+                .member(member)
                 .postType(postType)
                 .viewCount(0L)
                 .tags(tags)
@@ -50,6 +50,7 @@ public class PostService {
         Post saved = postRepository.save(post);
         return saved.getId();
     }
+    @Transactional(readOnly = true)
     public PostResponse getPost(Long id, boolean increaseView) {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("게시글 없음"));
@@ -58,14 +59,14 @@ public class PostService {
         }
         return PostResponse.from(post);
     }
-
+    @Transactional(readOnly = true)
     public Page<PostResponse> listPosts(PostType postType, Pageable pageable) {
         return postRepository.findByPostType(postType, pageable)
                 .map(PostResponse::from);
     }
 
-    public PostResponse updatePost(Long id, PostRequest request, String username) {
-        Member member = memberRepository.findByNickname(username).orElseThrow(() -> new RuntimeException("사용자 없음"));
+    public PostResponse updatePost(Long id, PostRequest request, Long memberId) {
+        Member member = memberRepository.findById(memberId).orElseThrow(() -> new RuntimeException("사용자 없음"));
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("게시글 없음"));
 
@@ -83,8 +84,8 @@ public class PostService {
         return PostResponse.from(post);
     }
 
-    public  void deletePost(Long id, String username) {
-        Member member = memberRepository.findByNickname(username).orElseThrow(() -> new RuntimeException("사용자 없음"));
+    public  void deletePost(Long id, Long memberId) {
+        Member member = memberRepository.findById(memberId).orElseThrow(() -> new RuntimeException("사용자 없음"));
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("게시글 없음"));
 
