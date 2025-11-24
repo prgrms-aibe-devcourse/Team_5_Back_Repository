@@ -4,13 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
 import java.util.Map;
 
-// OpenAI ChatCompletion API를 호출하는 클래스
-@Service
+// OpenAI ChatCompletion API를 호출하는 클라이언트.
+@Component
 @RequiredArgsConstructor
 public class OpenAiClient {
     private final RestTemplate restTemplate;
@@ -27,11 +28,10 @@ public class OpenAiClient {
         // 바디 정의
         Map<String, Object> body = Map.of(
                 "model", model,
-                "messages", new Object[]{
+                "messages", List.of(
                         Map.of("role", "system", "content", systemPrompt),
                         Map.of("role", "user", "content", userPrompt)
-                },
-                "temperature", 0.7
+                )
         );
 
         // 헤더 설정

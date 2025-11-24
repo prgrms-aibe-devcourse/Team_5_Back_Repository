@@ -12,8 +12,8 @@ public class RestTemplateConfig {
     @Bean
     public RestTemplate restTemplate() {
         return new RestTemplateBuilder()
-                .connectTimeout(Duration.ofSeconds(5)) // 연결 타임아웃을 5초로 설정
-                .readTimeout(Duration.ofSeconds(10)) // 읽기 타임아웃을 5초로 설정
+                .connectTimeout(Duration.ofSeconds(10)) // 연결 타임아웃 설정
+                .readTimeout(Duration.ofSeconds(30)) // 읽기 타임아웃 설정
                 .build();
     }
 }

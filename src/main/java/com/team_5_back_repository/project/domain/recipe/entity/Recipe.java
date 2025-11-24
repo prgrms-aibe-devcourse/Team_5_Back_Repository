@@ -4,13 +4,17 @@ import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.recipe.enums.CookingTime;
 import com.team_5_back_repository.project.domain.recipe.enums.Difficulty;
 import com.team_5_back_repository.project.domain.recipe.enums.RecipeCategory;
+import com.team_5_back_repository.project.domain.recipe.enums.RecipeStatus;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
 @Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "recipe")
 public class Recipe {
@@ -22,10 +26,7 @@ public class Recipe {
     @JoinColumn(name = "member_id")
     private Member member;
 
-    @Column(nullable = false)
     private String title;
-
-    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -44,4 +45,7 @@ public class Recipe {
 
     @Column(columnDefinition = "TEXT")
     private String steps; // JSON 문자열
+
+    @Enumerated(EnumType.STRING)
+    private RecipeStatus status;
 }
