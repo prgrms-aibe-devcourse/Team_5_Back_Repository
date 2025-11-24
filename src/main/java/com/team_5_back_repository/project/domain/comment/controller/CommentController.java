@@ -4,12 +4,15 @@ import com.team_5_back_repository.project.domain.comment.dto.CommentRequest;
 import com.team_5_back_repository.project.domain.comment.dto.CommentResponse;
 import com.team_5_back_repository.project.domain.comment.service.CommentService;
 import com.team_5_back_repository.project.global.rsData.RsData;
+import com.team_5_back_repository.project.global.security.SecurityUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +25,12 @@ public class CommentController {
 
     private final CommentService commentService;
 
+    private Long getCurrentMemberId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        SecurityUser user = (SecurityUser) auth.getPrincipal();
+        return user.getId();
+    }
+
     @PostMapping
     @Operation(summary = "댓글 작성", description = "게시글에 댓글 작성")
     @ApiResponses({
@@ -30,9 +39,9 @@ public class CommentController {
     })
     public RsData<Long> createComment(
             @PathVariable Long postId,
-            @RequestParam Long memberId,
             @Valid @RequestBody CommentRequest request
     ) {
+        Long memberId = getCurrentMemberId();
         Long id = commentService.createComment(postId, memberId, request);
         return new RsData<>("S-1", "댓글 작성 완료", id);
     }
@@ -57,9 +66,9 @@ public class CommentController {
     })
     public RsData<CommentResponse> updateComment(
             @PathVariable Long commentId,
-            @RequestParam Long memberId,
             @RequestBody CommentRequest request
     ) {
+        Long memberId = getCurrentMemberId();
         CommentResponse updated = commentService.updateComment(commentId, memberId, request);
         return new RsData<>("S-1", "댓글 수정 완료", updated);
     }
@@ -72,9 +81,9 @@ public class CommentController {
             @ApiResponse(responseCode = "404", description = "댓글 또는 회원 없음")
     })
     public RsData<?> deleteComment(
-            @PathVariable Long commentId,
-            @RequestParam Long memberId
+            @PathVariable Long commentId
     ) {
+        Long memberId = getCurrentMemberId();
         commentService.deleteComment(commentId, memberId);
         return new RsData<>("S-1", "댓글 삭제 완료", null);
     }
