@@ -1,11 +1,14 @@
 package com.team_5_back_repository.project.global.security.Rq;
 
 import com.team_5_back_repository.project.domain.member.entity.Member;
+import com.team_5_back_repository.project.domain.member.exception.MemberException;
+import com.team_5_back_repository.project.domain.member.service.MemberService;
 import com.team_5_back_repository.project.global.security.SecurityUser;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -18,6 +21,7 @@ import java.util.Optional;
 public class Rq {
     private final HttpServletRequest req;
     private final HttpServletResponse resp;
+    private final MemberService memberService;
 
     public Member getActor() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -82,5 +86,21 @@ public class Rq {
 
     public void deleteCookie(String name) {
         setCookie(name, null);
+    }
+
+    @SneakyThrows
+    public void sendRedirect(String url) {
+        resp.sendRedirect(url);
+    }
+
+    public Member getActorFromDb() {
+        Member actor = getActor();
+
+        if (actor == null) {
+            return null;
+        }
+
+        return memberService.findById(actor.getId()).orElseThrow(() ->
+                new MemberException("404-1", "존재하지 않는 회원입니다."));
     }
 }
