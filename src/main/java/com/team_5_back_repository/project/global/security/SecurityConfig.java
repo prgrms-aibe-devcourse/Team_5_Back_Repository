@@ -58,7 +58,10 @@ public class SecurityConfig {
                     auth -> auth
                             .requestMatchers("favicon.ico").permitAll()
                             .requestMatchers("/h2-console/**").permitAll()
-                            .requestMatchers("/api/v1/region/search").permitAll()
+                            .requestMatchers("/api/chatrooms/**").permitAll()  // 채팅 API 모두 허용
+                            .requestMatchers("/ws/**").permitAll()              // WebSocket 허용
+                            .requestMatchers("/api/**").permitAll()             // 개발 중 모든 API 허용
+                            .requestMatchers("/api/v1/region/search").permitAll() // 지역 검색 허용
                             .anyRequest().permitAll()
             );
         return http.build();
@@ -83,7 +86,7 @@ public class SecurityConfig {
 
         // CORS 설정을 소스에 등록
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/**", configuration);
+        source.registerCorsConfiguration("/**", configuration);
 
         return source;
     }
