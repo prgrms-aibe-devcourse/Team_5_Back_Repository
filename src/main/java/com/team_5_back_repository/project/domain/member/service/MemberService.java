@@ -223,8 +223,7 @@ public class MemberService {
         if (!passwordEncoder.matches(password, member.getPassword())) {
             throw new MemberException("402-1", "비밀번호가 일치하지 않습니다.");
         }
-        member.markAsDeleted();
-        memberRepository.save(member);
+        memberRepository.delete(member);
     }
 
     @Transactional

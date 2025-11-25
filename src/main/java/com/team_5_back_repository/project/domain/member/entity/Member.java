@@ -41,9 +41,6 @@ public class Member extends BaseEntity {
     @Column(nullable = false)
     private String apiKey;
 
-    @Column(nullable = false)
-    private Boolean isDeleted = false;
-
     public void addActivityRegion(ActivityRegion activityRegion) {
         this.activityRegions.add(activityRegion);
         activityRegion.setMember(this);
@@ -71,10 +68,6 @@ public class Member extends BaseEntity {
         }
 
         return authorities;
-    }
-
-    public void markAsDeleted() {
-        this.isDeleted = true;
     }
 
     public void changePassword(String newPassword) {
