@@ -61,10 +61,22 @@ public class PostService {
     }
     @Transactional(readOnly = true)
     public Page<PostResponse> listPosts(PostType postType, Pageable pageable) {
-        return postRepository.findByPostType(postType, pageable)
-                .map(PostResponse::from);
+        Page<Post> posts = postRepository.findByPostType(postType, pageable);
+
+        posts.forEach(post -> {
+            if (post.getRecommendCount() >= 10 && post.getPostType() != PostType.HOT) {
+                post.updateType(PostType.HOT);
+            }
+        });
+
+        return posts.map(PostResponse::from);
     }
 
+    @Transactional(readOnly = true)
+    public Page<PostResponse> listAllPosts(Pageable pageable) {
+        return postRepository.findAll(pageable)
+                .map(PostResponse::from);
+    }
     public PostResponse updatePost(Long id, PostRequest request, Long memberId) {
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new RuntimeException("사용자 없음"));
         Post post = postRepository.findById(id)

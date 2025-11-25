@@ -23,6 +23,7 @@ public class PostResponse {
     private PostType postType;
     private Set<String> tags;
     private Long viewCount;
+    private int likeCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -37,6 +38,7 @@ public class PostResponse {
                         .map(Tag::getName)
                         .collect(Collectors.toSet()))
                 .viewCount(post.getViewCount())
+                .likeCount(post.getLikeCount())
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
                 .attachmentPath(post.getAttachmentPath())

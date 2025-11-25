@@ -36,6 +36,13 @@ public class Post extends BaseEntity{
     private PostType postType;
 
     private Long viewCount = 0L;
+
+    @Column(nullable = false)
+    private int likeCount = 0;
+
+    @Column(nullable = false)
+    private int dislikeCount = 0;
+
     @Builder.Default
     @ManyToMany(cascade = CascadeType.PERSIST)
     @JoinTable(
@@ -58,5 +65,11 @@ public class Post extends BaseEntity{
     }
     public void increaseViewCount() {
         this.viewCount += 1;
+    }
+    public void updateType(PostType newType) {
+        this.postType = newType;
+    }
+    public int getRecommendCount() {
+        return this.likeCount;
     }
 }
