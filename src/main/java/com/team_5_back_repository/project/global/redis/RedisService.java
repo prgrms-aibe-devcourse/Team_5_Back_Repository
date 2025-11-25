@@ -12,20 +12,20 @@ import java.util.concurrent.TimeUnit;
 @Service
 @RequiredArgsConstructor
 public class RedisService {
-    private final RedisTemplate<String, Integer> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Value("${spring.mail.auth-code-expiration-millis}")
     private int codeExpirationMillis;
 
 
     public void setCode(String email,Integer code){
-        ValueOperations<String, Integer> valOperations = redisTemplate.opsForValue();
+        ValueOperations<String, Object> valOperations = redisTemplate.opsForValue();
         valOperations.set(email, code, codeExpirationMillis, TimeUnit.MILLISECONDS);
     }
 
     public Integer getCode(String email){
-        ValueOperations<String, Integer> valOperations = redisTemplate.opsForValue();
-        Integer code = valOperations.get(email);
+        ValueOperations<String, Object> valOperations = redisTemplate.opsForValue();
+        Integer code = (Integer) valOperations.get(email);
         if(code == null || code == 0){
             throw new UnAuthenticationException("400","인증코드가 만료되었습니다. 다시 시도해주세요.");
         }
