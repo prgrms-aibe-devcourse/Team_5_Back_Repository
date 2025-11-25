@@ -20,7 +20,7 @@ public class MemberJoinRequest {
     @Email(message = "유효한 이메일 형식이 아닙니다.")
     String email;
     @NotBlank(message = "비밀번호는 필수 입력 값입니다.")
-    @Size(min = 8, max = 200, message = "비밀번호는 8자 이상 13자 이하로 입력해 주세요.")
+    @Size(min = 8, max = 13, message = "비밀번호는 8자 이상 13자 이하로 입력해 주세요.")
     String password;
     @NotBlank(message = "닉네임은 필수 입력 값입니다.")
     @Size(min = 2, max = 10, message = "닉네임은 2~10자여야 합니다.")
@@ -38,6 +38,7 @@ public class MemberJoinRequest {
                 .introduction(this.introduction)
                 .apiKey(UUID.randomUUID().toString())
                 .activityRegions(new ArrayList<>())
+                .isDeleted(false)
                 .build();
     }
 }

@@ -3,6 +3,7 @@ package com.team_5_back_repository.project.domain.member.controller;
 import com.team_5_back_repository.project.domain.member.service.MemberService;
 import com.team_5_back_repository.project.global.email.service.EmailService;
 import com.team_5_back_repository.project.global.rsData.RsData;
+import com.team_5_back_repository.project.global.security.Rq.Rq;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.mail.MessagingException;
@@ -18,6 +19,8 @@ public class EmailController {
     private final MemberService memberService;
     private final EmailService emailService;
 
+    private final Rq rq;
+
     @PostMapping("/send")
     @Operation(summary = "이메일 전송", description = "현재 사용하려는 이메일이 사용가능한지 확인한 후, 인증 번호를 해당 이메일로 전송합니다.")
     public RsData<Boolean> sendEmail(@RequestParam String email) throws MessagingException {
@@ -25,6 +28,13 @@ public class EmailController {
             return new RsData<>("409", "이미 사용 중인 이메일입니다.", false);
         }
         emailService.sendEmail(email);
+        return new RsData<>("200", "이메일 전송 성공", true);
+    }
+
+    @PostMapping("/send-for-password")
+    @Operation(summary = "비밀번호 변경용 이메일 전송", description = "비밀번호 변경을 위한 인증 번호를 사용자 이메일로 전송합니다.")
+    public RsData<Boolean> sendEmailForPassword() throws MessagingException {
+        emailService.sendEmail(rq.getActor().getEmail());
         return new RsData<>("200", "이메일 전송 성공", true);
     }
 
