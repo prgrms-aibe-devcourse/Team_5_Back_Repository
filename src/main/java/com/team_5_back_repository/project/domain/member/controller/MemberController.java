@@ -4,6 +4,7 @@ import com.team_5_back_repository.project.domain.member.dto.dto.MemberDto;
 import com.team_5_back_repository.project.domain.member.dto.request.ChangePasswordRequest;
 import com.team_5_back_repository.project.domain.member.dto.request.MemberJoinRequest;
 import com.team_5_back_repository.project.domain.member.dto.request.MemberLoginRequest;
+import com.team_5_back_repository.project.domain.member.dto.request.WithDrawRequest;
 import com.team_5_back_repository.project.domain.member.dto.response.MemberLoginResponse;
 import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.member.exception.MemberException;
@@ -96,10 +97,9 @@ public class MemberController {
 
     @DeleteMapping
     @Operation(summary = "회원 탈퇴", description = "현재 로그인한 사용자의 회원 탈퇴를 처리합니다.")
-    public RsData<Void> withdraw(@RequestBody String password) {
+    public RsData<Void> withdraw(@RequestBody WithDrawRequest request) {
         Member actor = getMember();
-        memberService.withdraw(actor.getId(), password);
-        logout();
+        memberService.withdraw(actor.getId(), request.getPassword());
         return new RsData<>("205-1", "회원탈퇴 성공", null);
     }
 

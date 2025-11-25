@@ -38,7 +38,6 @@ public class MemberJoinRequest {
                 .introduction(this.introduction)
                 .apiKey(UUID.randomUUID().toString())
                 .activityRegions(new ArrayList<>())
-                .isDeleted(false)
                 .build();
     }
 }

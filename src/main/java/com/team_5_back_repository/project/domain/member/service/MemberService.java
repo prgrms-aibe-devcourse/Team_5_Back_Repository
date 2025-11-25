@@ -217,13 +217,14 @@ public class MemberService {
                 .build();
     }
 
+    @Transactional
     public void withdraw(Long memberId, String password) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException("404-1", "존재하지 않는 회원입니다."));
         if (!passwordEncoder.matches(password, member.getPassword())) {
             throw new MemberException("402-1", "비밀번호가 일치하지 않습니다.");
         }
-        memberRepository.delete(member);
+        memberRepository.deleteById(member.getId());
     }
 
     @Transactional
