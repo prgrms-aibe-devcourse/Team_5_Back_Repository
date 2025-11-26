@@ -66,7 +66,13 @@ public class PostController {
             @RequestParam PostType type,
             Pageable pageable
     ) {
-        Page<PostResponse> response = postService.listPosts(type, pageable);
+        Page<PostResponse> response;
+
+        if (type == PostType.ALL) {
+            response = postService.listAllPosts(pageable);
+        } else {
+            response = postService.listPosts(type, pageable);
+        }
         return ResponseEntity.ok(new RsData<>("200-1", "목록 조회 성공", response));
     }
 

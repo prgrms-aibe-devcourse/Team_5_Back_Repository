@@ -26,6 +26,7 @@ public class PostResponse {
     private int likeCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private boolean isHot;
 
     public static PostResponse from(Post post) {
         return PostResponse.builder()
@@ -42,6 +43,7 @@ public class PostResponse {
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
                 .attachmentPath(post.getAttachmentPath())
+                .isHot(post.getLikeCount() >= 10)
                 .build();
     }
 }

@@ -43,6 +43,9 @@ public class Post extends BaseEntity{
     @Column(nullable = false)
     private int dislikeCount = 0;
 
+    @Column(nullable = false)
+    private boolean isHot = false;
+
     @Builder.Default
     @ManyToMany(cascade = CascadeType.PERSIST)
     @JoinTable(
@@ -51,10 +54,6 @@ public class Post extends BaseEntity{
             inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
     private Set<Tag> tags = new HashSet<>();
-
-    public void addTag(Tag tag) {
-        tags.add(tag);
-    }
 
     public void update(String title, String content, String attachmentPath, PostType postType, Set<Tag> tags) {
         this.title = title;
