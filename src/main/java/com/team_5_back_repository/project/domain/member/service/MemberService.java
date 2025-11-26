@@ -1,6 +1,7 @@
 package com.team_5_back_repository.project.domain.member.service;
 
 import com.team_5_back_repository.project.domain.member.dto.dto.*;
+import com.team_5_back_repository.project.domain.member.dto.request.ChangePasswordRequest;
 import com.team_5_back_repository.project.domain.member.dto.request.MemberEditRequest;
 import com.team_5_back_repository.project.domain.member.dto.request.MemberJoinRequest;
 import com.team_5_back_repository.project.domain.member.dto.request.MemberLoginRequest;
@@ -15,10 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -216,4 +214,25 @@ public class MemberService {
                 .build();
     }
 
+    @Transactional
+    public void withdraw(Long memberId, String password) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberException("404-1", "존재하지 않는 회원입니다."));
+        if (!passwordEncoder.matches(password, member.getPassword()) && !Objects.equals(member.getPassword(), "")) {
+            throw new MemberException("402-1", "비밀번호가 일치하지 않습니다.");
+        }
+        memberRepository.deleteById(member.getId());
+    }
+
+    @Transactional
+    public void changePassword(Long memberId, ChangePasswordRequest changePR) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberException("404-1", "존재하지 않는 회원입니다."));
+        if (!passwordEncoder.matches(changePR.getCurrentPassword(), member.getPassword())) {
+            throw new MemberException("402-1", "비밀번호가 일치하지 않습니다.");
+        }
+
+        member.changePassword(passwordEncoder.encode(changePR.getNewPassword()));
+        memberRepository.save(member);
+    }
 }
