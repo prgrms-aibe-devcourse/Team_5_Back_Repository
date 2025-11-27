@@ -9,8 +9,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/v1/members")
@@ -35,9 +39,13 @@ public class MyPageController {
     }
 
     @Transactional
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}",
+            consumes = { MediaType.MULTIPART_FORM_DATA_VALUE }
+    )
     @Operation(summary = "마이페이지 수정", description = "회원이 자신의 정보를 수정합니다.")
-    public MemberDto editMyPage(@PathVariable Long id,@Valid @RequestBody MemberEditRequest memberEditRequest) {
-        return memberService.modifyMember(id, memberEditRequest);
+    public MemberDto editMyPage(@PathVariable Long id,
+                                @RequestPart("request") @Valid MemberEditRequest memberEditRequest,
+                                @RequestPart(value= "profileImage",  required = false) MultipartFile profileImage) throws IOException {
+        return memberService.modifyMember(id, memberEditRequest, profileImage);
     }
 }

@@ -11,11 +11,15 @@ import com.team_5_back_repository.project.domain.member.entity.Region;
 import com.team_5_back_repository.project.domain.member.exception.MemberException;
 import com.team_5_back_repository.project.domain.member.repository.MemberRepository;
 import com.team_5_back_repository.project.domain.post.service.PostService;
+import com.team_5_back_repository.project.global.cloudstorage.entity.FileEntity;
+import com.team_5_back_repository.project.global.cloudstorage.service.StorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,7 +32,7 @@ public class MemberService {
     private final RegionService regionService;
     private final PasswordEncoder passwordEncoder;
     private final PostService postService;
-
+    private final StorageService storageService;
     public long countMembers() {
         return memberRepository.count();
     }
@@ -121,7 +125,7 @@ public class MemberService {
     }
 
     @Transactional
-    public MemberDto modifyMember(Long id, MemberEditRequest memberEditRequest) {
+    public MemberDto modifyMember(Long id, MemberEditRequest memberEditRequest, MultipartFile profileImage) throws IOException {
 
         Member member = memberRepository.findMemberWithRegions(id)
                 .orElseThrow(() -> new MemberException("404-1", "존재하지 않는 회원입니다."));
@@ -131,6 +135,11 @@ public class MemberService {
         member.setNickname(memberEditRequest.getNickname());
         member.setIntroduction(memberEditRequest.getIntroduction());
         member.setEmail(memberEditRequest.getEmail());
+
+        FileEntity file = storageService.upload(profileImage, "profile-image");
+
+        member.setProfileImage(file);
+        memberRepository.save(member);
 
         List<ActivityRegion> oldRegions = member.getActivityRegions();
 
@@ -172,12 +181,14 @@ public class MemberService {
     }
 
     public MyPageDto retrieveMemberById(long id) {
-        Member member = memberRepository.findMemberWithRegions(id)
+        Member member = memberRepository.findMemberWithRegionsAndProfileImage(id)
                 .orElseThrow(() -> new MemberException("404-1", "존재하지 않는 회원입니다."));
 
         List<String> activityRegions = member.getActivityRegions().stream()
                 .map(ar -> ar.getRegion().getFullName())
                 .toList();
+
+        String profileImgUrl = member.getProfileImage() != null ? member.getProfileImage().getImgUrl() : null;
 
         Long postCount = postService.countPostsByMember(member);
         Long commentCount = 0L; // TODO 댓글, 좋아요, 팔로워, 팔로잉 추후 구현 필요
@@ -189,6 +200,7 @@ public class MemberService {
                 .nickname(member.getNickname())
                 .regions(activityRegions)
                 .introduction(member.getIntroduction())
+                .avatar(profileImgUrl)
                 .joinDate(member.getCreatedAt().toString())
                 .stats(new MemberStatDto(postCount, commentCount, likeCount, followerCount, followingCount))
                 .build();
