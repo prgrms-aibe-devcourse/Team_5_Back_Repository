@@ -136,9 +136,10 @@ public class MemberService {
         member.setIntroduction(memberEditRequest.getIntroduction());
         member.setEmail(memberEditRequest.getEmail());
 
-        FileEntity file = storageService.upload(profileImage, "profile-image");
-
-        member.setProfileImage(file);
+        if(profileImage != null) {
+            FileEntity file = storageService.upload(profileImage, "profile-image");
+            member.setProfileImage(file);
+        }
         memberRepository.save(member);
 
         List<ActivityRegion> oldRegions = member.getActivityRegions();
@@ -207,7 +208,7 @@ public class MemberService {
     }
 
     public MemberEditDto retrieveModifyMemberById(long id) {
-        Member member = memberRepository.findMemberWithRegions(id)
+        Member member = memberRepository.findMemberWithRegionsAndProfileImage(id)
                 .orElseThrow(() -> new MemberException("404-1", "존재하지 않는 회원입니다."));
 
         List<RegionDto> activityRegions = member.getActivityRegions().stream()
@@ -218,11 +219,14 @@ public class MemberService {
                 ))
                 .collect(Collectors.toList());
 
+        String profileImgUrl = member.getProfileImage() != null ? member.getProfileImage().getImgUrl() : "";
+
         return MemberEditDto.builder()
                 .nickname(member.getNickname())
                 .regions(activityRegions)
                 .introduction(member.getIntroduction())
                 .email(member.getEmail())
+                .profileImageUrl(profileImgUrl)
                 .build();
     }
 
