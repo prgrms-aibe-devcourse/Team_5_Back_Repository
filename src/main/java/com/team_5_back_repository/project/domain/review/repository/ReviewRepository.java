@@ -14,4 +14,6 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     Optional<Review> findByIdAndMemberId(Long id, Long memberId);
     @EntityGraph(attributePaths = {"restaurant", "member"})
     Optional<Review> findWithRelationsById(Long id);
+
+    void deleteByRestaurantId(Long restaurantId);
 }

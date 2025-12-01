@@ -18,6 +18,9 @@ public class Restaurant extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "owner_id", nullable = true)
+    private Long ownerId;
+
     @Column(nullable = false)
     private String name;
 
