@@ -22,6 +22,7 @@ public class Member extends BaseEntity {
     private Long id;
 
     @Column(nullable = false, unique = true)
+    @Setter
     private String email;
 
     @Column(nullable = false)
@@ -67,5 +68,9 @@ public class Member extends BaseEntity {
         }
 
         return authorities;
+    }
+
+    public void changePassword(String newPassword) {
+        this.password = newPassword;
     }
 }
