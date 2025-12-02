@@ -23,12 +23,12 @@ spring:
         highlight_sql: true
         use_sql_comments: true
 
-  # Redis 설정 (채팅용)
+  # Redis 설정 (채팅, 회원 이메일 인증)
   data:
     redis:
       host: localhost
       port: 6379
-      password:  # 비밀번호 없으면 비워두기
+      password:  ${REDIS_PASSWORD}
       timeout: 3000ms
       lettuce:
         pool:
