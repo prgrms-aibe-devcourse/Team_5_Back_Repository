@@ -20,30 +20,36 @@ public class PostResponse {
     private String content;
     private String attachmentPath;
     private String memberNickname;
+    private Long memberId;
     private PostType postType;
     private Set<String> tags;
     private Long viewCount;
     private int likeCount;
+    private int dislikeCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean isHot;
+    private boolean isAuthor;
+    private boolean isAdmin;
 
-    public static PostResponse from(Post post) {
+    public static PostResponse from(Post post, Long currentMemberId, boolean isAdmin) {
         return PostResponse.builder()
                 .id(post.getId())
                 .title(post.getTitle())
                 .content(post.getContent())
                 .memberNickname(post.getMember().getNickname())
+                .memberId(post.getMember().getId())
                 .postType(post.getPostType())
-                .tags(post.getTags().stream()
-                        .map(Tag::getName)
-                        .collect(Collectors.toSet()))
+                .tags(post.getTags().stream().map(Tag::getName).collect(Collectors.toSet()))
                 .viewCount(post.getViewCount())
                 .likeCount(post.getLikeCount())
+                .dislikeCount(post.getDislikeCount())
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
                 .attachmentPath(post.getAttachmentPath())
-                .isHot(post.getLikeCount() >= 10)
+                .isAuthor(post.getMember().getId().equals(currentMemberId))
+                .isAdmin(isAdmin)
+                .isHot(post.isHot())
                 .build();
     }
 }
