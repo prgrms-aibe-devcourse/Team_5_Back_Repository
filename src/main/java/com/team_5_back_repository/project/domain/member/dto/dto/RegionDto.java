@@ -1,4 +1,4 @@
-package com.team_5_back_repository.project.domain.member.dto;
+package com.team_5_back_repository.project.domain.member.dto.dto;
 
 import com.team_5_back_repository.project.domain.member.entity.Region;
 import lombok.AllArgsConstructor;

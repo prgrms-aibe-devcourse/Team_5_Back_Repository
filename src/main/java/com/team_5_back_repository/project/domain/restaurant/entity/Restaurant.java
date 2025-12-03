@@ -18,6 +18,9 @@ public class Restaurant extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "owner_id", nullable = true)
+    private Long ownerId;
+
     @Column(nullable = false)
     private String name;
 
@@ -45,6 +48,27 @@ public class Restaurant extends BaseEntity {
     public void applyNewRating(int rating) {
         double total = averageRating * reviewCount + rating;
         reviewCount += 1;
+        averageRating = total / reviewCount;
+    }
+
+    public void applyUpdatedRating(int oldRating, int newRating) {
+        if (reviewCount <= 0) {
+            reviewCount = 0;
+            averageRating = 0.0;
+            return;
+        }
+        double total = averageRating * reviewCount - oldRating + newRating;
+        averageRating = total / reviewCount;
+    }
+
+    public void applyDeletedRating(int oldRating) {
+        if (reviewCount <= 1) {
+            reviewCount = 0;
+            averageRating = 0.0;
+            return;
+        }
+        double total = averageRating * reviewCount - oldRating;
+        reviewCount -= 1;
         averageRating = total / reviewCount;
     }
 

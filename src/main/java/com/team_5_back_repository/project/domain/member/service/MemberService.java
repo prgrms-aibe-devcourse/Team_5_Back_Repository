@@ -1,21 +1,27 @@
 package com.team_5_back_repository.project.domain.member.service;
 
-import com.team_5_back_repository.project.domain.member.dto.*;
+import com.team_5_back_repository.project.domain.member.dto.dto.*;
+import com.team_5_back_repository.project.domain.member.dto.request.ChangePasswordRequest;
+import com.team_5_back_repository.project.domain.member.dto.request.MemberEditRequest;
+import com.team_5_back_repository.project.domain.member.dto.request.MemberJoinRequest;
+import com.team_5_back_repository.project.domain.member.dto.request.MemberLoginRequest;
 import com.team_5_back_repository.project.domain.member.entity.ActivityRegion;
 import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.member.entity.Region;
 import com.team_5_back_repository.project.domain.member.exception.MemberException;
 import com.team_5_back_repository.project.domain.member.repository.MemberRepository;
-import com.team_5_back_repository.project.domain.member.repository.RegionRepository;
+import com.team_5_back_repository.project.domain.post.service.PostService;
+import com.team_5_back_repository.project.global.cloudstorage.entity.FileEntity;
+import com.team_5_back_repository.project.global.cloudstorage.service.StorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -25,7 +31,8 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final RegionService regionService;
     private final PasswordEncoder passwordEncoder;
-
+    private final PostService postService;
+    private final StorageService storageService;
     public long countMembers() {
         return memberRepository.count();
     }
@@ -54,6 +61,14 @@ public class MemberService {
         }
         Member savedMember = memberRepository.save(member);
         return new MemberDto(savedMember);
+    }
+
+    public boolean isEmailAvailable(String email) {
+        return memberRepository.findByEmail(email).isEmpty();
+    }
+
+    public boolean isNicknameAvailable(String nickname) {
+        return memberRepository.findByNickname(nickname).isEmpty();
     }
 
     public Member login(MemberLoginRequest memberLoginRequest) {
@@ -109,8 +124,131 @@ public class MemberService {
         return memberRepository.save(member);
     }
 
-    public Optional<Member> findById(long id) {
-        return memberRepository.findById(id);
+    @Transactional
+    public MemberDto modifyMember(Long id, MemberEditRequest memberEditRequest, MultipartFile profileImage) throws IOException {
+
+        Member member = memberRepository.findMemberWithRegions(id)
+                .orElseThrow(() -> new MemberException("404-1", "존재하지 않는 회원입니다."));
+
+        regionService.saveRegions(memberEditRequest.getRegions());
+
+        member.setNickname(memberEditRequest.getNickname());
+        member.setIntroduction(memberEditRequest.getIntroduction());
+        member.setEmail(memberEditRequest.getEmail());
+
+        if(profileImage != null) {
+            FileEntity file = storageService.upload(profileImage, "profile-image");
+            member.setProfileImage(file);
+        }
+        memberRepository.save(member);
+
+        List<ActivityRegion> oldRegions = member.getActivityRegions();
+
+        List<Long> newRegionIds = memberEditRequest.getRegions().stream()
+                .map(r -> Long.parseLong(r.getCode()))
+                .toList();
+
+
+        List<ActivityRegion> toRemove = oldRegions.stream()
+                .filter(ar -> !newRegionIds.contains(ar.getRegion().getId()))
+                .toList();
+
+        member.getActivityRegions().removeAll(toRemove);
+
+
+        for (Long regionId : newRegionIds) {
+
+            boolean exists = oldRegions.stream()
+                    .anyMatch(ar -> ar.getRegion().getId().equals(regionId));
+
+            if (!exists) {
+                Region region = regionService.findById(regionId)
+                        .orElseThrow(() -> new MemberException("404-1", "존재하지 않는 지역입니다."));
+
+                ActivityRegion activityRegion = ActivityRegion.builder()
+                        .region(region)
+                        .member(member)
+                        .build();
+
+                member.addActivityRegion(activityRegion);
+            }
+        }
+
+        return new MemberDto(memberRepository.save(member));
     }
 
+    public Optional<Member> findById(long id) {
+        return memberRepository.findMemberWithRegions(id);
+    }
+
+    public MyPageDto retrieveMemberById(long id) {
+        Member member = memberRepository.findMemberWithRegionsAndProfileImage(id)
+                .orElseThrow(() -> new MemberException("404-1", "존재하지 않는 회원입니다."));
+
+        List<String> activityRegions = member.getActivityRegions().stream()
+                .map(ar -> ar.getRegion().getFullName())
+                .toList();
+
+        String profileImgUrl = member.getProfileImage() != null ? member.getProfileImage().getImgUrl() : null;
+
+        Long postCount = postService.countPostsByMember(member);
+        Long commentCount = 0L; // TODO 댓글, 좋아요, 팔로워, 팔로잉 추후 구현 필요
+        Long likeCount = 0L; // 추후 구현 필요
+        Long followerCount = 0L; // 추후 구현 필요
+        Long followingCount = 0L; // 추후 구현 필요
+
+        return MyPageDto.builder()
+                .nickname(member.getNickname())
+                .regions(activityRegions)
+                .introduction(member.getIntroduction())
+                .avatar(profileImgUrl)
+                .joinDate(member.getCreatedAt().toString())
+                .stats(new MemberStatDto(postCount, commentCount, likeCount, followerCount, followingCount))
+                .build();
+    }
+
+    public MemberEditDto retrieveModifyMemberById(long id) {
+        Member member = memberRepository.findMemberWithRegionsAndProfileImage(id)
+                .orElseThrow(() -> new MemberException("404-1", "존재하지 않는 회원입니다."));
+
+        List<RegionDto> activityRegions = member.getActivityRegions().stream()
+                .map(ar -> new RegionDto(
+                        String.valueOf(ar.getRegion().getId()),
+                        ar.getRegion().getFullName(),
+                        ar.getRegion().getShortName()
+                ))
+                .collect(Collectors.toList());
+
+        String profileImgUrl = member.getProfileImage() != null ? member.getProfileImage().getImgUrl() : "";
+
+        return MemberEditDto.builder()
+                .nickname(member.getNickname())
+                .regions(activityRegions)
+                .introduction(member.getIntroduction())
+                .email(member.getEmail())
+                .profileImageUrl(profileImgUrl)
+                .build();
+    }
+
+    @Transactional
+    public void withdraw(Long memberId, String password) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberException("404-1", "존재하지 않는 회원입니다."));
+        if (!passwordEncoder.matches(password, member.getPassword()) && !Objects.equals(member.getPassword(), "")) {
+            throw new MemberException("402-1", "비밀번호가 일치하지 않습니다.");
+        }
+        memberRepository.deleteById(member.getId());
+    }
+
+    @Transactional
+    public void changePassword(Long memberId, ChangePasswordRequest changePR) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberException("404-1", "존재하지 않는 회원입니다."));
+        if (!passwordEncoder.matches(changePR.getCurrentPassword(), member.getPassword())) {
+            throw new MemberException("402-1", "비밀번호가 일치하지 않습니다.");
+        }
+
+        member.changePassword(passwordEncoder.encode(changePR.getNewPassword()));
+        memberRepository.save(member);
+    }
 }

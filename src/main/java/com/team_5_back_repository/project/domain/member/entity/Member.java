@@ -1,5 +1,6 @@
 package com.team_5_back_repository.project.domain.member.entity;
 
+import com.team_5_back_repository.project.global.cloudstorage.entity.FileEntity;
 import com.team_5_back_repository.project.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -22,6 +23,7 @@ public class Member extends BaseEntity {
     private Long id;
 
     @Column(nullable = false, unique = true)
+    @Setter
     private String email;
 
     @Column(nullable = false)
@@ -31,8 +33,12 @@ public class Member extends BaseEntity {
     @Setter
     private String nickname;
 
+    @OneToOne(cascade = CascadeType.ALL)
+    @Setter
+    private FileEntity profileImage;
+
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ActivityRegion> activityRegions = new ArrayList<>(); //NullPointerException 방지
+    private List<ActivityRegion> activityRegions;
 
     @Setter
     private String introduction;
@@ -67,5 +73,9 @@ public class Member extends BaseEntity {
         }
 
         return authorities;
+    }
+
+    public void changePassword(String newPassword) {
+        this.password = newPassword;
     }
 }
