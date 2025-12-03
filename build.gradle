@@ -35,7 +35,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     implementation 'org.springframework.boot:spring-boot-starter-mail'
-    implementation 'com.sun.mail:jakarta.mail:2.0.3'
 
     // DB
     runtimeOnly 'com.h2database:h2'
