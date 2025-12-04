@@ -17,6 +17,7 @@ public class RestaurantDto {
     private final double distanceKm;
     private final double averageRating;
     private final long reviewCount;
+    private final Long ownerId;
 
     public static RestaurantDto of(Restaurant r, double distanceKm) {
         return new RestaurantDto(
@@ -29,7 +30,8 @@ public class RestaurantDto {
                 r.getLongitude(),
                 distanceKm,
                 r.getAverageRating(),
-                r.getReviewCount()
+                r.getReviewCount(),
+                r.getOwnerId()
         );
     }
 }
