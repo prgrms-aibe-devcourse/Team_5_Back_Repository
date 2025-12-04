@@ -43,7 +43,7 @@ public class CommentController {
     ) {
         Long memberId = getCurrentMemberId();
         Long id = commentService.createComment(postId, memberId, request);
-        return new RsData<>("S-1", "댓글 작성 완료", id);
+        return new RsData<>("200", "댓글 작성 완료", id);
     }
 
     @GetMapping
@@ -54,7 +54,7 @@ public class CommentController {
     })
     public RsData<List<CommentResponse>> getComments(@PathVariable Long postId) {
         List<CommentResponse> comments = commentService.getComments(postId);
-        return new RsData<>("S-1", "댓글 리스트 조회 성공", comments);
+        return new RsData<>("200", "댓글 리스트 조회 성공", comments);
     }
 
     @PutMapping("/{commentId}")
@@ -70,7 +70,7 @@ public class CommentController {
     ) {
         Long memberId = getCurrentMemberId();
         CommentResponse updated = commentService.updateComment(commentId, memberId, request);
-        return new RsData<>("S-1", "댓글 수정 완료", updated);
+        return new RsData<>("200", "댓글 수정 완료", updated);
     }
 
     @DeleteMapping("/{commentId}")
@@ -85,6 +85,6 @@ public class CommentController {
     ) {
         Long memberId = getCurrentMemberId();
         commentService.deleteComment(commentId, memberId);
-        return new RsData<>("S-1", "댓글 삭제 완료", null);
+        return new RsData<>("200", "댓글 삭제 완료", null);
     }
 }

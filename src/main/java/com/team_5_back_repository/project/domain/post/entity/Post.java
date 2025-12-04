@@ -1,11 +1,15 @@
 package com.team_5_back_repository.project.domain.post.entity;
 
+import com.team_5_back_repository.project.domain.comment.entity.Comment;
+import com.team_5_back_repository.project.domain.like.entity.PostLike;
 import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -36,6 +40,16 @@ public class Post extends BaseEntity{
     private PostType postType;
 
     private Long viewCount = 0L;
+
+    @Column(nullable = false)
+    private int likeCount = 0;
+
+    @Column(nullable = false)
+    private int dislikeCount = 0;
+
+    @Column(nullable = false)
+    private boolean isHot = false;
+
     @Builder.Default
     @ManyToMany(cascade = CascadeType.PERSIST)
     @JoinTable(
@@ -45,18 +59,41 @@ public class Post extends BaseEntity{
     )
     private Set<Tag> tags = new HashSet<>();
 
-    public void addTag(Tag tag) {
-        tags.add(tag);
-    }
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> comments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.REMOVE)
+    @Builder.Default
+    private List<PostLike> likes = new ArrayList<>();
 
     public void update(String title, String content, String attachmentPath, PostType postType, Set<Tag> tags) {
         this.title = title;
         this.content = content;
         this.attachmentPath = attachmentPath;
         this.postType = postType;
-        this.tags = tags;
+        this.tags.clear();
+        if (tags != null) {
+            this.tags.addAll(tags);
+        }
     }
     public void increaseViewCount() {
         this.viewCount += 1;
+    }
+
+    public void increaseLike() { this.likeCount++;
+        if (this.likeCount >= 2) {
+            this.isHot = true;
+        }}
+    public void decreaseLike() { if (this.likeCount > 0) this.likeCount--; }
+
+    public void increaseDislike() { this.dislikeCount++;
+}
+    public void decreaseDislike() { if (this.dislikeCount > 0) this.dislikeCount--; }
+
+    public int getRecommendCount() {
+        return this.likeCount;
+    }
+    public int getDislikeCount() {
+        return this.dislikeCount;
     }
 }
