@@ -1,10 +1,7 @@
 package com.team_5_back_repository.project.domain.chatroom.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -12,7 +9,10 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "chat_message")
 public class ChatMessage {
@@ -22,42 +22,36 @@ public class ChatMessage {
     private Long id;
 
     @Column(nullable = false)
-    private Long chatRoomId;  // 채팅방 ID
+    private Long chatRoomId;
 
     @Column(nullable = false)
-    private Long senderId;  // 발신자 ID
+    private Long senderId;
 
     @Column(nullable = false)
-    private String senderNickname;  // 발신자 닉네임
+    private String senderNickname;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private MessageType type;  // 메시지 타입
+    private MessageType type;
 
     @Column(nullable = false, columnDefinition = "TEXT")
-    private String content;  // 메시지 내용
+    private String content;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Builder
-    public ChatMessage(Long chatRoomId, Long senderId, String senderNickname,
-                       MessageType type, String content) {
-        this.chatRoomId = chatRoomId;
-        this.senderId = senderId;
-        this.senderNickname = senderNickname;
-        this.type = type;
-        this.content = content;
-    }
-
     /**
      * 메시지 타입
+     * - TALK: 일반 채팅 메시지
      * - ENTER: 입장 메시지
-     * - TALK: 일반 대화
      * - LEAVE: 퇴장 메시지
+     * - KICK: 강퇴 메시지 (방장이 참여자를 강퇴)
      */
     public enum MessageType {
-        ENTER, TALK, LEAVE
+        TALK,    // 일반 메시지
+        ENTER,   // 입장
+        LEAVE,   // 퇴장
+        KICK     // 강퇴
     }
 }
