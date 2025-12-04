@@ -26,7 +26,7 @@ spring:
   # Redis 설정 (채팅, 회원 이메일 인증)
   data:
     redis:
-      host: localhost
+      host: ${REDIS_HOST}
       port: 6379
       password:  ${REDIS_PASSWORD}
       timeout: 3000ms
