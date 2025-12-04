@@ -4,9 +4,11 @@ import com.team_5_back_repository.project.domain.restaurant.dto.RestaurantCreate
 import com.team_5_back_repository.project.domain.restaurant.dto.RestaurantDto;
 import com.team_5_back_repository.project.domain.restaurant.dto.RestaurantUpdateRequest;
 import com.team_5_back_repository.project.domain.restaurant.service.RestaurantService;
+import com.team_5_back_repository.project.global.security.Rq.Rq;
 import com.team_5_back_repository.project.global.rsData.RsData;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +19,7 @@ import java.util.List;
 public class ApiV1RestaurantController {
 
     private final RestaurantService restaurantService;
+    private final Rq rq;
 
     @GetMapping("/nearby")
     public RsData<List<RestaurantDto>> nearby(
@@ -28,9 +31,22 @@ public class ApiV1RestaurantController {
         return new RsData<>("200-1", "OK", list);
     }
 
+    @GetMapping
+    public RsData<List<RestaurantDto>> list(@RequestParam(required = false) String keyword) {
+        List<RestaurantDto> list = restaurantService.list(keyword);
+        return new RsData<>("200-1", "OK", list);
+    }
+
     @PostMapping
-    public RsData<RestaurantDto> create(@RequestBody @Valid RestaurantCreateRequest req) {
-        RestaurantDto dto = restaurantService.create(req);
+    @PreAuthorize("isAuthenticated()")
+    public RsData<RestaurantDto> create(@RequestBody @Valid RestaurantCreateRequest req,
+                                        @RequestParam(required = false, defaultValue = "false") boolean asImported) {
+        var actor = rq.getActor();
+        Long ownerId = null;
+        if (!asImported) {
+            ownerId = actor == null ? null : actor.getId();
+        }
+        RestaurantDto dto = restaurantService.create(req, ownerId);
         return new RsData<>("200-1", "CREATED", dto);
     }
 
