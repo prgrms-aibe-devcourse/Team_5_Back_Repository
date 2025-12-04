@@ -24,7 +24,7 @@ public class Restaurant extends BaseEntity {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, length = 30)
+    @Column(nullable = true, length = 30)
     private String phone;
 
     @Column(nullable = false)
