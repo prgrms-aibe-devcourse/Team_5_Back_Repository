@@ -33,7 +33,8 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
     private List<String> excludedUrls = List.of(
             "/api/v1/auth/login",
             "/api/v1/auth/logout",
-            "/api/v1/auth/signup"
+            "/api/v1/auth/signup",
+            "/api/v1/auth/check-nickname"
     );
 
     @Override
@@ -43,8 +44,11 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
             throws IOException, ServletException {
 
         try {
-            // API 요청이 아니거나 인증 필요 없는 URL이면 패스
-            if (!request.getRequestURI().startsWith("/api/") || excludedUrls.contains(request.getRequestURI())) {
+            String requestURI = request.getRequestURI();
+            String method = request.getMethod();
+
+            // API 요청이 아니거나 인증 불필요한 경로면 패스
+            if (!requestURI.startsWith("/api/") || shouldSkipAuthentication(requestURI, method)) {
                 filterChain.doFilter(request, response);
                 return;
             }
@@ -65,9 +69,6 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
                 apiKey = rq.getCookieValue("apiKey", "");
                 accessToken = rq.getCookieValue("accessToken", "");
             }
-
-//            log.debug("apiKey: " + apiKey);
-//            log.debug("accessToken: " + accessToken);
 
             if (apiKey.isBlank() && accessToken.isBlank()) {
                 filterChain.doFilter(request, response);
@@ -126,7 +127,64 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
             RsData<Void> rsData = e.getRsData();
             response.setContentType("application/json");
             response.setStatus(rsData.statusCode());
-            response.getWriter().write(Ut.json.toString(rsData));
+
+            // ⭐ null 체크 추가
+            String jsonResponse = Ut.json.toString(rsData);
+            if (jsonResponse != null) {
+                response.getWriter().write(jsonResponse);
+            }
         }
+    }
+
+    /**
+     * ⭐ 인증을 스킵할 경로인지 확인 (정밀한 제어)
+     */
+    private boolean shouldSkipAuthentication(String requestURI, String method) {
+        // 정확히 일치하는 URL
+        if (excludedUrls.contains(requestURI)) {
+            return true;
+        }
+
+        // GET 요청 처리
+        if ("GET".equals(method)) {
+            // ⭐ 공동구매 참여자 조회는 인증 필요 (스킵 안 함)
+            if (requestURI.matches("/api/v1/group-buying/\\d+/participants")) {
+                return false; // 인증 필터 통과
+            }
+
+            // 공동구매 목록 조회 (비회원 허용)
+            if (requestURI.equals("/api/v1/group-buying")) {
+                return true;
+            }
+
+            // 공동구매 상세 조회 (비회원 허용)
+            if (requestURI.matches("/api/v1/group-buying/\\d+")) {
+                return true;
+            }
+
+            // ⭐ 채팅 메시지/참여자 조회는 인증 필요 (스킵 안 함)
+            if (requestURI.contains("/chatrooms/") &&
+                    (requestURI.contains("/messages") || requestURI.contains("/participants"))) {
+                return false; // 인증 필터 통과
+            }
+
+            // 채팅방 목록/상세 조회 (비회원 허용)
+            if (requestURI.startsWith("/api/chatrooms") ||
+                    requestURI.startsWith("/api/v1/chatrooms")) {
+                return true;
+            }
+        }
+
+        // WebSocket
+        if (requestURI.startsWith("/ws")) {
+            return true;
+        }
+
+        // 지역 검색
+        if (requestURI.equals("/api/v1/region/search")) {
+            return true;
+        }
+
+        return false;
     }
 }

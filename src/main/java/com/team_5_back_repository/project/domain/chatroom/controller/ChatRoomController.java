@@ -49,6 +49,7 @@ public class ChatRoomController {
 
     /**
      * 채팅방 목록 조회 (비회원도 가능)
+     * 공동구매 채팅방은 제외 (소모임만 표시)
      * GET /api/v1/chatrooms?region=강남구&type=SMALL_GROUP
      */
     @GetMapping
@@ -56,7 +57,19 @@ public class ChatRoomController {
             @RequestParam(required = false) String region,
             @RequestParam(required = false) ChatRoomType type
     ) {
-        ChatRoomListResponse response = chatRoomService.getChatRooms(region, type);
+        // type이 null이면 소모임만 조회 (GROUP_PURCHASE 제외)
+        ChatRoomType filterType = type != null ? type : ChatRoomType.SMALL_GROUP;
+
+        // GROUP_PURCHASE는 소모임 목록에서 제외
+        if (filterType == ChatRoomType.GROUP_PURCHASE) {
+            // 빈 목록 반환 또는 에러
+            return ResponseEntity.ok(ChatRoomListResponse.builder()
+                    .chatRooms(List.of())
+                    .totalCount(0)
+                    .build());
+        }
+
+        ChatRoomListResponse response = chatRoomService.getChatRooms(region, filterType);
         return ResponseEntity.ok(response);
     }
 
@@ -109,7 +122,7 @@ public class ChatRoomController {
     }
 
     /**
-     * 채팅방 나가기 (로그인 필수) - 순서 변경
+     * 채팅방 나가기 (로그인 필수)
      * POST /api/v1/chatrooms/{chatRoomId}/leave
      */
     @PostMapping("/{chatRoomId}/leave")
@@ -158,7 +171,7 @@ public class ChatRoomController {
     }
 
     /**
-     * 채팅방 최근 메시지 조회 (로그인 필수)
+     * 채팅방 최근 메시지 조회 (비회원도 접근 가능, 비회원은 빈 목록)
      * GET /api/v1/chatrooms/{chatRoomId}/messages/recent?count=50
      */
     @GetMapping("/{chatRoomId}/messages/recent")
@@ -167,8 +180,10 @@ public class ChatRoomController {
             @RequestParam(defaultValue = "50") int count
     ) {
         Member actor = rq.getActor();
+
+        // 비회원이면 빈 목록 반환 (에러 없이)
         if (actor == null) {
-            throw new IllegalStateException("로그인이 필요합니다.");
+            return ResponseEntity.ok(List.of());
         }
 
         List<ChatMessageResponse> messages = chatMessageService.getRecentMessages(chatRoomId, count);
@@ -176,7 +191,7 @@ public class ChatRoomController {
     }
 
     /**
-     * 채팅방 참여자 목록 조회 (로그인 필수)
+     * 채팅방 참여자 목록 조회 (비회원도 접근 가능, 비회원은 빈 목록)
      * GET /api/v1/chatrooms/{chatRoomId}/participants
      */
     @GetMapping("/{chatRoomId}/participants")
@@ -184,8 +199,10 @@ public class ChatRoomController {
             @PathVariable Long chatRoomId
     ) {
         Member actor = rq.getActor();
+
+        // 비회원이면 빈 목록 반환 (에러 없이)
         if (actor == null) {
-            throw new IllegalStateException("로그인이 필요합니다.");
+            return ResponseEntity.ok(List.of());
         }
 
         List<ChatParticipant> participants = chatRoomService.getChatRoomParticipants(chatRoomId);
@@ -197,5 +214,33 @@ public class ChatRoomController {
         log.info("채팅방 참여자 목록 조회: chatRoomId={}, 참여자 수={}", chatRoomId, responses.size());
 
         return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * 참여자 강퇴 (방장만 가능)
+     * POST /api/v1/chatrooms/{chatRoomId}/kick/{targetMemberId}
+     */
+    @PostMapping("/{chatRoomId}/kick/{targetMemberId}")
+    public ResponseEntity<Void> kickParticipant(
+            @PathVariable Long chatRoomId,
+            @PathVariable Long targetMemberId
+    ) {
+        Member actor = rq.getActor();
+        if (actor == null) {
+            throw new IllegalStateException("로그인이 필요합니다.");
+        }
+
+        try {
+            // 강퇴 처리
+            chatRoomService.kickParticipant(chatRoomId, actor.getId(), targetMemberId);
+
+            log.info("✅ 참여자 강퇴 완료: chatRoomId={}, kickedBy={}, targetMemberId={}",
+                    chatRoomId, actor.getId(), targetMemberId);
+
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.error("❌ 참여자 강퇴 실패: {}", e.getMessage());
+            throw e;
+        }
     }
 }
