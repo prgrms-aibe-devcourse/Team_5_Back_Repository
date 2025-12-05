@@ -72,7 +72,10 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // 허용할 오리진 설정
-        configuration.setAllowedOrigins(List.of("http://localhost:3000","https://resreqonelifefront.vercel.app"));
+        configuration.setAllowedOrigins(
+                List.of("http://localhost:3000",
+                        "https://resreqonelifefront.vercel.app",
+                        "https://onelife.mwan.site"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE"));
 
         // 자격 증명 허용 설정
