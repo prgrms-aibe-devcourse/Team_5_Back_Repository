@@ -7,7 +7,7 @@ public record RestaurantCreateRequest(
         @NotBlank String name,
         @NotBlank String jibunAddress,
         @NotBlank String roadAddress,
-        @NotBlank String phone,
+        String phone,
         @NotNull Double latitude,
         @NotNull Double longitude
 ) {
