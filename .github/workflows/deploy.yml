@@ -21,6 +21,7 @@ on:
     branches:
       - develop
       - main
+      - feature/infra
 
 # 권한 최소화/명시화
 permissions:
