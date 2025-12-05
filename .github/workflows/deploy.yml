@@ -8,7 +8,6 @@ env:
   CONTAINER_1_NAME: onelife_1 # 슬롯1(고정 이름)
   EC2_INSTANCE_TAG_NAME: team5-ec2-1 # 배포 대상 EC2 Name 태그
   DOCKER_NETWORK: common # 도커 네트워크
-  BACKEND_DIR: backend # Dockerfile 위치
 
 on:
   push:
@@ -20,7 +19,8 @@ on:
       - "settings.gradle"
       - "Dockerfile"
     branches:
-      - feature/infra
+      - develop
+      - main
 
 # 권한 최소화/명시화
 permissions:
