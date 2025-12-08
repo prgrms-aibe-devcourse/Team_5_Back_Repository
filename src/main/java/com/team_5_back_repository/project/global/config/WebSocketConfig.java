@@ -46,7 +46,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("http://localhost:3000")  // Next.js 개발 서버
+                .setAllowedOriginPatterns(
+                        "http://localhost:3000",
+                        "https://resreqonelifefront.vercel.app",
+                        "https://onelife.mwan.site")  // Next.js 개발 서버
                 .withSockJS();  // SockJS 폴백 활성화
     }
 
