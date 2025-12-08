@@ -1,0 +1,18 @@
+spring:
+  autoconfigure:
+    exclude:
+  data:
+    redis:
+      host: onelife_redis
+      password: ${REDIS_PASSWORD}
+  datasource:
+    url: jdbc:mysql://onelife_mysql:3306/onelife?useSSL=false&useUnicode=true&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+logging:
+  level:
+    org.hibernate.orm.jdbc.bind: INFO
+    org.hibernate.orm.jdbc.extract: INFO
+    org.springframework.transaction.interceptor: INFO
+    com.back: INFO
