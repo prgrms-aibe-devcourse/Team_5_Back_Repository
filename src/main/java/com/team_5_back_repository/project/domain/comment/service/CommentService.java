@@ -10,6 +10,9 @@ import com.team_5_back_repository.project.domain.member.repository.MemberReposit
 import com.team_5_back_repository.project.domain.post.entity.Post;
 import com.team_5_back_repository.project.domain.post.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,6 +82,16 @@ public class CommentService {
         }
 
         comment.softDelete();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Comment> getCommentByMember(Member member, Pageable pageable) {
+        return commentRepository.findByMemberAndDeletedFalse(member, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Long countCommentByMember(Member member) {
+        return commentRepository.countByMemberAndDeletedFalse(member);
     }
 
 }

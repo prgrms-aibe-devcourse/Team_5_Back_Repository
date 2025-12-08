@@ -12,4 +12,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // 멤버 별 게시글 수 조회
     long countByMember(Member member);
+
+    Page<Post> findByMember(Member member, Pageable pageable);
 }
