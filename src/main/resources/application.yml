@@ -38,7 +38,6 @@ spring:
 
     config:
         import: optional:file:.env[.properties]
-
     servlet:
         multipart:
             enabled: true

@@ -71,9 +71,12 @@ public class Rq {
         Cookie cookie = new Cookie(name, value);
         cookie.setPath("/"); // 쿠키를 도메인 전체에서 쓰겠다.
         cookie.setHttpOnly(true); // 쿠키를 스크립트로 접근 못하게(XSS 공격방어)
+        // cookie.setDomain("localhost"); // 쿠키가 적용될 도메인 지정
+        // cookie.setSecure(false); // http에서도 작동 (https일 때는 true) TODO 배포 시 true로 변경 필요
+        // cookie.setAttribute("SameSite", "Strict"); // 크로스 사이트 요청 위조 방지
         cookie.setDomain("onelife.mwan.site"); // 쿠키가 적용될 도메인 지정
-        cookie.setSecure(false); // http에서도 작동 (https일 때는 true) TODO 배포 시 true로 변경 필요
-        cookie.setAttribute("SameSite", "Strict"); // 크로스 사이트 요청 위조 방지
+        cookie.setSecure(true); // http에서도 작동 (https일 때는 true) TODO 배포 시 true로 변경 필요
+        cookie.setAttribute("SameSite", "None"); // 크로스 사이트 요청 위조 방지
 
         if (value.isBlank()) {
             cookie.setMaxAge(0);
