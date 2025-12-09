@@ -5,6 +5,7 @@ import com.team_5_back_repository.project.domain.comment.dto.CommentRequest;
 import com.team_5_back_repository.project.domain.comment.dto.CommentResponse;
 import com.team_5_back_repository.project.domain.comment.entity.Comment;
 import com.team_5_back_repository.project.domain.comment.repository.CommentRepository;
+import com.team_5_back_repository.project.domain.member.dto.dto.CommentDto;
 import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.member.repository.MemberRepository;
 import com.team_5_back_repository.project.domain.post.entity.Post;
@@ -85,7 +86,7 @@ public class CommentService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Comment> getCommentByMember(Member member, Pageable pageable) {
+    public Page<CommentDto> getCommentByMember(Member member, Pageable pageable) {
         return commentRepository.findByMemberAndDeletedFalse(member, pageable);
     }
 

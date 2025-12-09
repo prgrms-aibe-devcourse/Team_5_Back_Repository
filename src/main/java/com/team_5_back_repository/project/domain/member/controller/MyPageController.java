@@ -2,10 +2,7 @@ package com.team_5_back_repository.project.domain.member.controller;
 
 import com.team_5_back_repository.project.domain.comment.entity.Comment;
 import com.team_5_back_repository.project.domain.comment.service.CommentService;
-import com.team_5_back_repository.project.domain.member.dto.dto.MemberDto;
-import com.team_5_back_repository.project.domain.member.dto.dto.MemberEditDto;
-import com.team_5_back_repository.project.domain.member.dto.dto.MyPageDto;
-import com.team_5_back_repository.project.domain.member.dto.dto.PostDto;
+import com.team_5_back_repository.project.domain.member.dto.dto.*;
 import com.team_5_back_repository.project.domain.member.dto.request.MemberEditRequest;
 import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.member.exception.MemberException;
@@ -75,8 +72,8 @@ public class MyPageController {
     @Transactional(readOnly = true)
     @GetMapping("/comments")
     @Operation(summary = "내가 작성한 댓글 조회", description = "회원이 자신이 작성한 댓글을 조회합니다.")
-    public Page<Comment> getCommentsByMember(@RequestParam(defaultValue = "0") int page,
-                                             @RequestParam(defaultValue = "5") int size) {
+    public Page<CommentDto> getCommentsByMember(@RequestParam(defaultValue = "0") int page,
+                                                @RequestParam(defaultValue = "5") int size) {
         Pageable pageable = PageRequest.of(page, size);
         return commentService.getCommentByMember(getMember(), pageable);
     }

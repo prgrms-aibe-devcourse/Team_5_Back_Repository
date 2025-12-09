@@ -1,5 +1,7 @@
 package com.team_5_back_repository.project.global.init;
 
+import com.team_5_back_repository.project.domain.comment.dto.CommentRequest;
+import com.team_5_back_repository.project.domain.comment.service.CommentService;
 import com.team_5_back_repository.project.domain.member.dto.request.MemberJoinRequest;
 import com.team_5_back_repository.project.domain.member.dto.dto.RegionDto;
 import com.team_5_back_repository.project.domain.member.service.MemberService;
@@ -73,6 +75,7 @@ public class MemberInit {
                             .build(),
                     1L
             );
+            commentService.createComment(i+1L, 1L, new CommentRequest("테스트 댓글 " + (i + 1)));
         }
 
         for(int i = 0; i < 11; i ++) {
@@ -85,6 +88,10 @@ public class MemberInit {
                             .build(),
                     1L
             );
+            commentService.createComment(i+11L, 1L, new CommentRequest("테스트 댓글 " + (i + 1)));
         }
     }
+
+    @Autowired
+    private CommentService commentService;
 }
