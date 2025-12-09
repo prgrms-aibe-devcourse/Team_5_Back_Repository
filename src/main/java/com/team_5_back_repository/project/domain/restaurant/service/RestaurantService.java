@@ -58,12 +58,22 @@ public class RestaurantService {
         double maxLng = lng + tolLng;
 
         List<Restaurant> candidates = restaurantRepository.findByLatitudeBetweenAndLongitudeBetween(minLat, maxLat, minLng, maxLng);
-        for (Restaurant c : candidates) {
-            double distKm = haversine(lat, lng, c.getLatitude(), c.getLongitude());
-            if (distKm <= tolKm) {
-                return RestaurantDto.of(c, distKm);
+            for (Restaurant c : candidates) {
+                double distKm = haversine(lat, lng, c.getLatitude(), c.getLongitude());
+                if (distKm <= tolKm) {
+                    String existingName = c.getName() == null ? "" : c.getName().trim().toLowerCase();
+                    String reqName = req.name() == null ? "" : req.name().trim().toLowerCase();
+                    String existingPhone = c.getPhone() == null ? "" : c.getPhone().trim();
+                    String reqPhone = req.phone() == null ? "" : req.phone().trim();
+
+                    boolean nameMatches = !existingName.isEmpty() && !reqName.isEmpty() && existingName.equals(reqName);
+                    boolean phoneMatches = !existingPhone.isEmpty() && !reqPhone.isEmpty() && existingPhone.equals(reqPhone);
+
+                    if (nameMatches || phoneMatches) {
+                        return RestaurantDto.of(c, distKm);
+                    }
+                }
             }
-        }
 
         Restaurant.RestaurantBuilder builder = Restaurant.builder()
                 .name(req.name())
