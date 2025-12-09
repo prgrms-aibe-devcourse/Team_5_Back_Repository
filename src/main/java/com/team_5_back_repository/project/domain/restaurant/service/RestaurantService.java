@@ -50,6 +50,7 @@ public class RestaurantService {
         double lat = req.latitude();
         double lng = req.longitude();
 
+<<<<<<< HEAD
         try {
             // lightweight logging to help diagnose unexpected returns
             System.out.println("[RestaurantService] create called asImported=" + asImported + " ownerId=" + ownerId + " name=" + req.name() + " lat=" + req.latitude() + " lng=" + req.longitude());
@@ -78,9 +79,25 @@ public class RestaurantService {
                         System.out.println("[RestaurantService] nearby candidate matched id=" + c.getId() + " name=" + c.getName() + " distKm=" + distKm);
                     } catch (Exception e) {}
                     return RestaurantDto.of(c, distKm);
+=======
+        List<Restaurant> candidates = restaurantRepository.findByLatitudeBetweenAndLongitudeBetween(minLat, maxLat, minLng, maxLng);
+            for (Restaurant c : candidates) {
+                double distKm = haversine(lat, lng, c.getLatitude(), c.getLongitude());
+                if (distKm <= tolKm) {
+                    String existingName = c.getName() == null ? "" : c.getName().trim().toLowerCase();
+                    String reqName = req.name() == null ? "" : req.name().trim().toLowerCase();
+                    String existingPhone = c.getPhone() == null ? "" : c.getPhone().trim();
+                    String reqPhone = req.phone() == null ? "" : req.phone().trim();
+
+                    boolean nameMatches = !existingName.isEmpty() && !reqName.isEmpty() && existingName.equals(reqName);
+                    boolean phoneMatches = !existingPhone.isEmpty() && !reqPhone.isEmpty() && existingPhone.equals(reqPhone);
+
+                    if (nameMatches || phoneMatches) {
+                        return RestaurantDto.of(c, distKm);
+                    }
+>>>>>>> develop
                 }
             }
-        }
 
         Restaurant.RestaurantBuilder builder = Restaurant.builder()
                 .name(req.name())

@@ -35,7 +35,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     implementation 'org.springframework.boot:spring-boot-starter-mail'
-    implementation 'com.sun.mail:jakarta.mail:2.0.3'
+    implementation 'org.eclipse.angus:angus-mail:2.0.3'
 
 
     // DB
