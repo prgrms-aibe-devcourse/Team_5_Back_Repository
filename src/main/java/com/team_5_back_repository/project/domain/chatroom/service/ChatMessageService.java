@@ -193,4 +193,42 @@ public class ChatMessageService {
 
         return response;
     }
+
+    /**
+     * 권한 이양 메시지 생성 및 브로드캐스트 (신규 추가)
+     */
+    @Transactional
+    public ChatMessageResponse createTransferMessage(
+            Long chatRoomId,
+            String formerCreatorNickname,
+            String newCreatorNickname) {
+
+        log.info("권한 이양 메시지 생성: chatRoomId={}, {} → {}",
+                chatRoomId, formerCreatorNickname, newCreatorNickname);
+
+        // 1. 권한 이양 메시지 생성
+        ChatMessage transferMessage = ChatMessage.builder()
+                .chatRoomId(chatRoomId)
+                .senderId(0L) // 시스템 메시지
+                .senderNickname("시스템")
+                .type(ChatMessage.MessageType.TRANSFER)
+                .content(String.format("방장 권한이 %s님에서 %s님으로 이양되었습니다.",
+                        formerCreatorNickname, newCreatorNickname))
+                .build();
+
+        // 2. DB 저장
+        ChatMessage saved = messageRepository.save(transferMessage);
+        ChatMessageResponse response = ChatMessageResponse.from(saved);
+
+        // 3. Redis 저장
+        redisChatService.saveMessage(chatRoomId, response);
+
+        // 4. WebSocket 브로드캐스트
+        String destination = "/topic/chatroom/" + chatRoomId;
+        messagingTemplate.convertAndSend(destination, response);
+
+        log.info("✅ 권한 이양 메시지 전송 완료: chatRoomId={}", chatRoomId);
+
+        return response;
+    }
 }
