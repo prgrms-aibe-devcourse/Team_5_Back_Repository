@@ -11,6 +11,7 @@ import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.member.exception.MemberException;
 import com.team_5_back_repository.project.domain.member.service.MemberService;
 import com.team_5_back_repository.project.domain.post.entity.Post;
+import com.team_5_back_repository.project.domain.post.entity.PostType;
 import com.team_5_back_repository.project.domain.post.service.PostService;
 import com.team_5_back_repository.project.global.security.Rq.Rq;
 import io.swagger.v3.oas.annotations.Operation;
@@ -86,9 +87,10 @@ public class MyPageController {
     @GetMapping("/posts")
     @Operation(summary = "내가 작성한 게시글 조회", description = "회원이 자신이 작성한 게시글을 조회합니다.")
     public Page<PostDto> getPostsByMember(@RequestParam(defaultValue = "0") int page,
-                                          @RequestParam(defaultValue = "5") int size) {
+                                          @RequestParam(defaultValue = "5") int size,
+                                          @RequestParam(required = false) PostType postType) {
         Pageable pageable = PageRequest.of(page, size);
-        return postService.getPostsByMember(getMember(), pageable);
+        return postService.getPostsByMember(getMember(), pageable, postType);
     }
 
 }

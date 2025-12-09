@@ -153,15 +153,14 @@ public class PostService {
         return postRepository.countByMember(member);
     }
 
-    public Page<PostDto> getPostsByMember(Member member, Pageable pageable) {
-        Page<Post> posts = postRepository.findByMember(member, pageable);
-        return posts.map(post ->
-                PostDto.builder()
-                        .id(post.getId())
-                        .title(post.getTitle())
-                        .createdAt(post.getCreatedAt().toString())
-                        .updatedAt(post.getUpdatedAt().toString())
-                        .build()
-        );
+    public Page<PostDto> getPostsByMember(Member member, Pageable pageable, PostType postType) {
+        Page<PostDto> posts;
+        if(postType == PostType.ALL) {
+            posts = postRepository.findPostByMember(member, pageable);
+        } else {
+            posts = postRepository.findPostByMemberAndType(member, postType, pageable);
+        }
+        System.out.println("타입 : " + postType);
+        return posts;
     }
 }

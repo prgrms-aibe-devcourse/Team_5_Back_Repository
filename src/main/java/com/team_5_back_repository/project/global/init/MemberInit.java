@@ -3,6 +3,9 @@ package com.team_5_back_repository.project.global.init;
 import com.team_5_back_repository.project.domain.member.dto.request.MemberJoinRequest;
 import com.team_5_back_repository.project.domain.member.dto.dto.RegionDto;
 import com.team_5_back_repository.project.domain.member.service.MemberService;
+import com.team_5_back_repository.project.domain.post.dto.PostRequest;
+import com.team_5_back_repository.project.domain.post.entity.PostType;
+import com.team_5_back_repository.project.domain.post.service.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
@@ -13,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Configuration
 @RequiredArgsConstructor
@@ -22,6 +26,7 @@ public class MemberInit {
     private MemberInit self;
 
     private final MemberService memberService;
+    private final PostService postService;
 
     @Bean
     ApplicationRunner baseInitDataApplicationRunner() {
@@ -57,5 +62,29 @@ public class MemberInit {
                         .regions(regionDtoList)
                         .build()
         );
+
+        for(int i = 0; i < 11; i ++) {
+            postService.createPost(
+                    PostRequest.builder()
+                            .title("테스트 게시글 " + (i + 1))
+                            .content("이것은 테스트 게시글입니다.")
+                            .postType(PostType.FREE)
+                            .tags(Set.of("테스트", "게시글"))
+                            .build(),
+                    1L
+            );
+        }
+
+        for(int i = 0; i < 11; i ++) {
+            postService.createPost(
+                    PostRequest.builder()
+                            .title("테스트 게시글 " + (i + 1))
+                            .content("이것은 테스트 게시글입니다.")
+                            .postType(PostType.TIP)
+                            .tags(Set.of("테스트", "게시글"))
+                            .build(),
+                    1L
+            );
+        }
     }
 }
