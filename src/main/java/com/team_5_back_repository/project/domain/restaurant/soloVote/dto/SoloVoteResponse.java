@@ -10,5 +10,5 @@ import lombok.NoArgsConstructor;
 public class SoloVoteResponse {
     private long yesCount;
     private long noCount;
-    private Boolean myChoice; // null if not voted, true/false otherwise
+    private Boolean myChoice;
 }

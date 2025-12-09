@@ -29,5 +29,5 @@ public class SoloVote {
     private Restaurant restaurant;
 
     @Column(nullable = false)
-    private boolean willEatAlone; // true: 혼밥 가능/yes, false: no
+    private boolean willEatAlone;
 }

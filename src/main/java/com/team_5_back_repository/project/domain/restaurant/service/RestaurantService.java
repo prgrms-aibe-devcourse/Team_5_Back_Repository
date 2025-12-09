@@ -50,20 +50,11 @@ public class RestaurantService {
         double lat = req.latitude();
         double lng = req.longitude();
 
-<<<<<<< HEAD
         try {
-            // lightweight logging to help diagnose unexpected returns
             System.out.println("[RestaurantService] create called asImported=" + asImported + " ownerId=" + ownerId + " name=" + req.name() + " lat=" + req.latitude() + " lng=" + req.longitude());
         } catch (Exception e) {}
-
-        // If this is NOT an imported creation and NOT created by a logged-in user,
-        // perform nearby-duplicate detection to avoid creating duplicate records
-        // for the same physical place. We skip this detection for imported items
-        // (asImported==true) and for explicit creations by authenticated users
-        // (ownerId != null) so that user-added restaurants and imported entries
-        // are created as distinct records.
         if (!asImported && ownerId == null) {
-            double tolKm = 0.05; // 50 meters
+            double tolKm = 0.05;
             double tolLat = tolKm / 111.32;
             double tolLng = tolKm / (111.32 * Math.cos(Math.toRadians(lat == 0.0 ? 0.0001 : lat)));
             double minLat = lat - tolLat;
@@ -79,25 +70,9 @@ public class RestaurantService {
                         System.out.println("[RestaurantService] nearby candidate matched id=" + c.getId() + " name=" + c.getName() + " distKm=" + distKm);
                     } catch (Exception e) {}
                     return RestaurantDto.of(c, distKm);
-=======
-        List<Restaurant> candidates = restaurantRepository.findByLatitudeBetweenAndLongitudeBetween(minLat, maxLat, minLng, maxLng);
-            for (Restaurant c : candidates) {
-                double distKm = haversine(lat, lng, c.getLatitude(), c.getLongitude());
-                if (distKm <= tolKm) {
-                    String existingName = c.getName() == null ? "" : c.getName().trim().toLowerCase();
-                    String reqName = req.name() == null ? "" : req.name().trim().toLowerCase();
-                    String existingPhone = c.getPhone() == null ? "" : c.getPhone().trim();
-                    String reqPhone = req.phone() == null ? "" : req.phone().trim();
-
-                    boolean nameMatches = !existingName.isEmpty() && !reqName.isEmpty() && existingName.equals(reqName);
-                    boolean phoneMatches = !existingPhone.isEmpty() && !reqPhone.isEmpty() && existingPhone.equals(reqPhone);
-
-                    if (nameMatches || phoneMatches) {
-                        return RestaurantDto.of(c, distKm);
-                    }
->>>>>>> develop
                 }
             }
+        }
 
         Restaurant.RestaurantBuilder builder = Restaurant.builder()
                 .name(req.name())
