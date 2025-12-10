@@ -46,34 +46,33 @@ public class RestaurantService {
     }
 
     @Transactional
-    public RestaurantDto create(RestaurantCreateRequest req, Long ownerId) {
+    public RestaurantDto create(RestaurantCreateRequest req, Long ownerId, boolean asImported) {
         double lat = req.latitude();
         double lng = req.longitude();
-        double tolKm = 0.05; // 50 meters
-        double tolLat = tolKm / 111.32;
-        double tolLng = tolKm / (111.32 * Math.cos(Math.toRadians(lat == 0.0 ? 0.0001 : lat)));
-        double minLat = lat - tolLat;
-        double maxLat = lat + tolLat;
-        double minLng = lng - tolLng;
-        double maxLng = lng + tolLng;
 
-        List<Restaurant> candidates = restaurantRepository.findByLatitudeBetweenAndLongitudeBetween(minLat, maxLat, minLng, maxLng);
+        try {
+            System.out.println("[RestaurantService] create called asImported=" + asImported + " ownerId=" + ownerId + " name=" + req.name() + " lat=" + req.latitude() + " lng=" + req.longitude());
+        } catch (Exception e) {}
+        if (!asImported && ownerId == null) {
+            double tolKm = 0.05;
+            double tolLat = tolKm / 111.32;
+            double tolLng = tolKm / (111.32 * Math.cos(Math.toRadians(lat == 0.0 ? 0.0001 : lat)));
+            double minLat = lat - tolLat;
+            double maxLat = lat + tolLat;
+            double minLng = lng - tolLng;
+            double maxLng = lng + tolLng;
+
+            List<Restaurant> candidates = restaurantRepository.findByLatitudeBetweenAndLongitudeBetween(minLat, maxLat, minLng, maxLng);
             for (Restaurant c : candidates) {
                 double distKm = haversine(lat, lng, c.getLatitude(), c.getLongitude());
                 if (distKm <= tolKm) {
-                    String existingName = c.getName() == null ? "" : c.getName().trim().toLowerCase();
-                    String reqName = req.name() == null ? "" : req.name().trim().toLowerCase();
-                    String existingPhone = c.getPhone() == null ? "" : c.getPhone().trim();
-                    String reqPhone = req.phone() == null ? "" : req.phone().trim();
-
-                    boolean nameMatches = !existingName.isEmpty() && !reqName.isEmpty() && existingName.equals(reqName);
-                    boolean phoneMatches = !existingPhone.isEmpty() && !reqPhone.isEmpty() && existingPhone.equals(reqPhone);
-
-                    if (nameMatches || phoneMatches) {
-                        return RestaurantDto.of(c, distKm);
-                    }
+                    try {
+                        System.out.println("[RestaurantService] nearby candidate matched id=" + c.getId() + " name=" + c.getName() + " distKm=" + distKm);
+                    } catch (Exception e) {}
+                    return RestaurantDto.of(c, distKm);
                 }
             }
+        }
 
         Restaurant.RestaurantBuilder builder = Restaurant.builder()
                 .name(req.name())
@@ -91,7 +90,22 @@ public class RestaurantService {
 
         Restaurant restaurant = builder.build();
         Restaurant saved = restaurantRepository.save(restaurant);
+        try {
+            System.out.println("[RestaurantService] saved new restaurant id=" + saved.getId() + " name=" + saved.getName());
+        } catch (Exception e) {}
         return RestaurantDto.of(saved, 0.0);
+    }
+
+    @Transactional
+    public RestaurantDto setImage(Long id, String imageUrl, Long actorId) {
+        Restaurant r = restaurantRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("restaurant not found"));
+        if (r.getOwnerId() == null || !r.getOwnerId().equals(actorId)) {
+            throw new IllegalArgumentException("only owner can set image");
+        }
+        r.setImage(imageUrl);
+        restaurantRepository.save(r);
+        return RestaurantDto.of(r, 0.0);
     }
 
     public RestaurantDto getById(Long id) {

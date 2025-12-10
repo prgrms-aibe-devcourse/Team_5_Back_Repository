@@ -45,6 +45,13 @@ public class Restaurant extends BaseEntity {
     @Column(nullable = false)
     private long reviewCount;
 
+    @Column(nullable = true)
+    private String image;
+
+    public void setImage(String image) {
+        this.image = image;
+    }
+
     public void applyNewRating(int rating) {
         double total = averageRating * reviewCount + rating;
         reviewCount += 1;
