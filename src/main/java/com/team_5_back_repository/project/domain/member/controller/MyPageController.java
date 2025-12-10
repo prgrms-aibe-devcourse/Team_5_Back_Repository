@@ -1,7 +1,9 @@
 package com.team_5_back_repository.project.domain.member.controller;
 
+import com.team_5_back_repository.project.domain.chatroom.service.ChatRoomService;
 import com.team_5_back_repository.project.domain.comment.entity.Comment;
 import com.team_5_back_repository.project.domain.comment.service.CommentService;
+import com.team_5_back_repository.project.domain.groupbuying.service.GroupBuyingService;
 import com.team_5_back_repository.project.domain.member.dto.dto.*;
 import com.team_5_back_repository.project.domain.member.dto.request.MemberEditRequest;
 import com.team_5_back_repository.project.domain.member.entity.Member;
@@ -34,6 +36,8 @@ public class MyPageController {
     private final MemberService memberService;
     private final CommentService commentService;
     private final PostService postService;
+    private final ChatRoomService chatRoomService;
+    private final GroupBuyingService groupBuyingService;
     private final Rq rq;
 
     private Member getMember() {
@@ -78,7 +82,7 @@ public class MyPageController {
         return commentService.getCommentByMember(getMember(), pageable);
     }
 
-    //TODO 북마크, 팔로잉
+    //TODO 북마크
 
     @Transactional(readOnly = true)
     @GetMapping("/posts")
@@ -90,4 +94,21 @@ public class MyPageController {
         return postService.getPostsByMember(getMember(), pageable, postType);
     }
 
+    @Transactional(readOnly = true)
+    @GetMapping("/groups")
+    @Operation(summary = "내가 참여한 소모임 조회", description = "회원이 자신이 참여한 소모임을 조회합니다.")
+    public Page<GroupChatDto> getGroupsByMember(@RequestParam(defaultValue = "0") int page,
+                                              @RequestParam(defaultValue = "5") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return chatRoomService.getGroupsByMember(getMember(), pageable);
+    }
+
+    @Transactional(readOnly = true)
+    @GetMapping("/group-buys")
+    @Operation(summary = "내가 참여한 공동구매 조회", description = "회원이 자신이 참여한 공동구매를 조회합니다.")
+    public Page<GroupBuyDto> getGroupBuysByMember(@RequestParam(defaultValue = "0") int page,
+                                                  @RequestParam(defaultValue = "5") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return groupBuyingService.getParticipatingGroupBuys(getMember(), pageable);
+    }
 }
