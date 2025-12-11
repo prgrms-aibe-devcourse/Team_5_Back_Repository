@@ -1,6 +1,10 @@
 package com.team_5_back_repository.project.domain.chatroom.repository;
 
 import com.team_5_back_repository.project.domain.chatroom.entity.ChatParticipant;
+import com.team_5_back_repository.project.domain.member.dto.dto.GroupChatDto;
+import com.team_5_back_repository.project.domain.member.entity.Member;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -36,4 +40,24 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
     @Modifying
     @Query("DELETE FROM ChatParticipant cp WHERE cp.chatRoomId = :chatRoomId AND cp.member.id = :memberId")
     void deleteByChatRoomIdAndMemberId(@Param("chatRoomId") Long chatRoomId, @Param("memberId") Long memberId);
+
+    @Query(
+    value = """
+        SELECT new com.team_5_back_repository.project.domain.member.dto.dto.GroupChatDto(
+            cp.chatRoomId,
+            cr.name,
+            cr.currentParticipants,
+            cr.maxParticipants,
+            cr.createdAt
+        )
+        FROM ChatParticipant cp
+        JOIN ChatRoom cr ON cr.id = cp.chatRoomId
+        WHERE cp.member = :member AND cr.type = 'SMALL_GROUP'
+    """,
+    countQuery = """
+        SELECT COUNT(cp)
+        FROM ChatParticipant cp
+        WHERE cp.member = :member
+    """)
+    Page<GroupChatDto> findByMember(@Param("member") Member member, Pageable pageable);
 }
