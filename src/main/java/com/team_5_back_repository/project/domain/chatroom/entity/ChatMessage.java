@@ -47,11 +47,13 @@ public class ChatMessage {
      * - ENTER: 입장 메시지
      * - LEAVE: 퇴장 메시지
      * - KICK: 강퇴 메시지 (방장이 참여자를 강퇴)
+     * - TRANSFER: 방장 권한 이양 메시지
      */
     public enum MessageType {
-        TALK,    // 일반 메시지
-        ENTER,   // 입장
-        LEAVE,   // 퇴장
-        KICK     // 강퇴
+        TALK,      // 일반 메시지
+        ENTER,     // 입장
+        LEAVE,     // 퇴장
+        KICK,      // 강퇴
+        TRANSFER   // 권한 이양
     }
 }

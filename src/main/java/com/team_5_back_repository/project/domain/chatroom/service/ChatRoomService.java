@@ -5,10 +5,12 @@ import com.team_5_back_repository.project.domain.chatroom.dto.response.ChatRoomL
 import com.team_5_back_repository.project.domain.chatroom.dto.response.ChatRoomResponse;
 import com.team_5_back_repository.project.domain.chatroom.entity.ChatParticipant;
 import com.team_5_back_repository.project.domain.chatroom.entity.ChatRoom;
+import com.team_5_back_repository.project.domain.chatroom.entity.ChatRoomBan;
 import com.team_5_back_repository.project.domain.chatroom.entity.ChatRoomType;
 import com.team_5_back_repository.project.domain.chatroom.repository.ChatMessageRepository;
 import com.team_5_back_repository.project.domain.chatroom.repository.ChatParticipantRepository;
 import com.team_5_back_repository.project.domain.chatroom.repository.ChatRoomRepository;
+import com.team_5_back_repository.project.domain.chatroom.repository.ChatRoomBanRepository;
 import com.team_5_back_repository.project.domain.groupbuying.entity.GroupBuyingParticipant;
 import com.team_5_back_repository.project.domain.groupbuying.entity.GroupBuyingStatus;
 import com.team_5_back_repository.project.domain.member.dto.dto.GroupChatDto;
@@ -39,24 +41,20 @@ public class ChatRoomService {
     private final ChatMessageRepository messageRepository;
     private final MemberRepository memberRepository;
     private final ChatMessageService chatMessageService;
+    private final ChatRoomBanRepository banRepository;
 
     // 공동구매 검증을 위해 추가
     private final GroupBuyingPostRepository groupBuyingPostRepository;
     private final GroupBuyingParticipantRepository groupBuyingParticipantRepository;
-
-    // Redis 참여자 관리를 위한 서비스 (선택사항)
-    // private final RedisChatService redisChatService;
 
     /**
      * 채팅방 생성
      */
     @Transactional
     public ChatRoomResponse createChatRoom(ChatRoomCreateRequest request, Long creatorId) {
-        // Member 조회
         Member creator = memberRepository.findById(creatorId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-        // 채팅방 생성
         ChatRoom chatRoom = ChatRoom.builder()
                 .name(request.getName())
                 .type(request.getType())
@@ -68,7 +66,6 @@ public class ChatRoomService {
 
         ChatRoom savedRoom = chatRoomRepository.save(chatRoom);
 
-        // 생성자를 참여자로 추가 (Member 객체 사용)
         ChatParticipant creatorParticipant = ChatParticipant.builder()
                 .chatRoomId(savedRoom.getId())
                 .member(creator)
@@ -120,7 +117,8 @@ public class ChatRoomService {
     }
 
     /**
-     * 채팅방 참여 (공동구매 참여자 검증 추가)
+     * 채팅방 참여 (기존 이름 유지, 내부에서 입장 메시지 자동 생성)
+     * GroupBuyingService에서 호출하는 메서드 - 메시지 생성 안 함
      */
     @Transactional
     public void joinChatRoom(Long chatRoomId, Long memberId) {
@@ -129,13 +127,16 @@ public class ChatRoomService {
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 채팅방입니다."));
 
+        // 강퇴 이력 확인
+        if (banRepository.existsByChatRoomIdAndMemberId(chatRoomId, memberId)) {
+            throw new IllegalStateException("강퇴된 채팅방에는 다시 참여할 수 없습니다.");
+        }
+
         // 공동구매 채팅방인 경우 참여자 검증
         if (chatRoom.getType() == ChatRoomType.GROUP_PURCHASE) {
-            // 공동구매 게시글 조회
             GroupBuyingPost post = groupBuyingPostRepository.findByChatRoomId(chatRoomId)
                     .orElseThrow(() -> new IllegalArgumentException("연결된 공동구매 게시글을 찾을 수 없습니다."));
 
-            // 공동구매 참여자인지 확인
             boolean isParticipant = groupBuyingParticipantRepository
                     .existsByGroupBuyingPostIdAndMember_Id(post.getId(), memberId);
 
@@ -146,20 +147,19 @@ public class ChatRoomService {
             log.info("공동구매 참여자 확인 완료: postId={}, memberId={}", post.getId(), memberId);
         }
 
-        // Member 조회
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
         // 이미 참여 중인지 확인
         if (participantRepository.existsByChatRoomIdAndMemberId(chatRoomId, memberId)) {
             log.info("이미 참여 중인 채팅방: chatRoomId={}, memberId={}", chatRoomId, memberId);
-            return; // 이미 참여 중이면 그냥 리턴
+            return;
         }
 
-        // 인원 확인
+        // 인원 확인 및 증가
         chatRoom.increaseParticipant();
 
-        // 참여자 추가 (Member 객체 사용)
+        // 참여자 추가
         ChatParticipant participant = ChatParticipant.builder()
                 .chatRoomId(chatRoomId)
                 .member(member)
@@ -169,15 +169,29 @@ public class ChatRoomService {
         participantRepository.save(participant);
         chatRoomRepository.save(chatRoom);
 
+        // 입장 메시지 자동 생성 (GroupBuyingService 호출 시에는 생성 안 됨)
+        // 이미 참여 중이면 메시지 생성하지 않음
         log.info("채팅방 참여 완료: chatRoomId={}, memberId={}", chatRoomId, memberId);
     }
 
     /**
-     * 채팅방 나가기 (상태만 자동 업데이트)
-     * - 방장 권한 이양
-     * - 공동구매 참여자도 함께 나가기
-     * - 자리 생기면 상태 RECRUITING으로 변경
-     * - 빈 채팅방 및 게시글 삭제
+     * 채팅방 참여 + 입장 메시지 (Controller 전용)
+     */
+    @Transactional
+    public void joinChatRoomWithMessage(Long chatRoomId, Long memberId, String nickname) {
+        log.info("✅ 채팅방 참여 + 입장 메시지: chatRoomId={}, memberId={}", chatRoomId, memberId);
+
+        // 1. 참여 처리
+        joinChatRoom(chatRoomId, memberId);
+
+        // 2. 입장 메시지 생성
+        chatMessageService.createEnterMessage(chatRoomId, memberId, nickname);
+
+        log.info("✅ 채팅방 참여 + 입장 메시지 완료: chatRoomId={}, memberId={}", chatRoomId, memberId);
+    }
+
+    /**
+     * 채팅방 나가기 (기존 이름 유지, 방장 권한 이양 개선)
      */
     @Transactional
     public void leaveChatRoom(Long chatRoomId, Long memberId) {
@@ -185,6 +199,13 @@ public class ChatRoomService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 채팅방입니다."));
 
         log.info("채팅방 나가기 시작: chatRoomId={}, memberId={}", chatRoomId, memberId);
+
+        boolean isCreator = chatRoom.getCreatorId().equals(memberId);
+
+        // 방장이 나가는 경우: 자동 이양 대신 예외 처리
+        if (isCreator && chatRoom.getCurrentParticipants() > 1) {
+            throw new IllegalStateException("방장은 다른 참여자에게 권한을 이양한 후 나갈 수 있습니다.");
+        }
 
         // 0. 공동구매 채팅방인 경우 먼저 공동구매에서 나가기
         if (chatRoom.getType() == ChatRoomType.GROUP_PURCHASE) {
@@ -197,7 +218,6 @@ public class ChatRoomService {
                 if (!post.getCreatorId().equals(memberId)) {
                     log.info("공동구매 일반 참여자 나가기 처리: postId={}, memberId={}", post.getId(), memberId);
 
-                    // 공동구매 참여자 조회
                     Optional<GroupBuyingParticipant> participantOpt =
                             groupBuyingParticipantRepository.findByGroupBuyingPostIdAndMember_Id(post.getId(), memberId);
 
@@ -214,14 +234,11 @@ public class ChatRoomService {
                         post.decreaseParticipant();
                         log.info("참여자 수 감소: currentParticipants={}", post.getCurrentParticipants());
 
-                        // 다시 생기거나 금액이 미달이면 상태를 RECRUITING으로 변경
-                        // 마감일은 주최자가 직접 수정할 수 있도록 유지
+                        // 다시 자리 생기거나 금액 미달이면 상태를 RECRUITING으로 변경
                         if (post.getCurrentParticipants() < post.getTargetParticipants() ||
                                 post.getCurrentAmount() < post.getTargetAmount()) {
                             post.updateStatus(GroupBuyingStatus.RECRUITING);
-                            log.info("✅ 모집 상태 변경: COMPLETED → RECRUITING (인원: {}/{}, 금액: {}/{})",
-                                    post.getCurrentParticipants(), post.getTargetParticipants(),
-                                    post.getCurrentAmount(), post.getTargetAmount());
+                            log.info("✅ 모집 상태 변경: COMPLETED → RECRUITING");
                         }
 
                         // 공동구매 참여자 삭제
@@ -236,85 +253,126 @@ public class ChatRoomService {
             }
         }
 
-        // 1. 방장이 나가는 경우 처리
-        boolean isCreatorLeaving = chatRoom.getCreatorId().equals(memberId);
-
-        if (isCreatorLeaving) {
-            log.info("방장이 채팅방을 나갑니다: chatRoomId={}, memberId={}", chatRoomId, memberId);
-
-            // 입장 순서대로 정렬된 참여자 목록 조회
-            List<ChatParticipant> remainingParticipants = participantRepository
-                    .findByChatRoomIdOrderByJoinedAtAsc(chatRoomId)
-                    .stream()
-                    .filter(p -> !p.getMemberId().equals(memberId))
-                    .toList();
-
-            if (!remainingParticipants.isEmpty()) {
-                // 가장 먼저 참여한 사람(첫 번째)을 새 방장으로
-                ChatParticipant nextCreator = remainingParticipants.get(0);
-                Long newCreatorId = nextCreator.getMemberId();
-                Member newCreatorMember = nextCreator.getMember();
-
-                chatRoom.changeCreator(newCreatorId);
-
-                // 기존 참여자 데이터 삭제
-                participantRepository.delete(nextCreator);
-                participantRepository.flush();
-
-                // 새로운 방장 참여자 생성
-                ChatParticipant newCreatorParticipant = ChatParticipant.builder()
-                        .chatRoomId(chatRoomId)
-                        .member(newCreatorMember)
-                        .isCreator(true)
-                        .build();
-                participantRepository.save(newCreatorParticipant);
-
-                log.info("✅ 방장 권한 이양 (입장 순서): {} → {}", memberId, newCreatorId);
-            }
-        }
-
-        // 2. 참여자 삭제
+        // 참여자 삭제
         participantRepository.deleteByChatRoomIdAndMemberId(chatRoomId, memberId);
 
-        // 3. 인원 감소
+        // 인원 감소
         chatRoom.decreaseParticipant();
 
-        // 4. 참여자가 0명이면 채팅방 완전 삭제
+        // 참여자가 0명이면 채팅방 완전 삭제
         if (chatRoom.getCurrentParticipants() == 0) {
-            log.info("⚠마지막 참여자가 나가서 채팅방을 삭제합니다: chatRoomId={}", chatRoomId);
+            log.info("⚠️ 마지막 참여자가 나가서 채팅방을 삭제합니다: chatRoomId={}", chatRoomId);
 
-            // 4-1. 공동구매 채팅방이면 게시글도 삭제
+            // 공동구매 채팅방이면 게시글도 삭제
             if (chatRoom.getType() == ChatRoomType.GROUP_PURCHASE) {
                 groupBuyingPostRepository.findByChatRoomId(chatRoomId)
                         .ifPresent(post -> {
                             log.info("공동구매 게시글 발견: postId={}", post.getId());
-
-                            // 공동구매 참여자 먼저 삭제
                             groupBuyingParticipantRepository.deleteByGroupBuyingPostId(post.getId());
                             log.info("✅ 공동구매 참여자 삭제 완료: postId={}", post.getId());
-
-                            // 게시글 삭제
                             groupBuyingPostRepository.delete(post);
                             log.info("✅ 채팅방 삭제로 인한 게시글 자동 삭제: postId={}", post.getId());
                         });
             }
 
-            // 4-2. 채팅 메시지 삭제
             messageRepository.deleteByChatRoomId(chatRoomId);
-            log.info("✅ 채팅 메시지 삭제 완료: chatRoomId={}", chatRoomId);
-
-            // 4-3. 채팅방 삭제
+            banRepository.deleteByChatRoomId(chatRoomId);
             chatRoomRepository.delete(chatRoom);
 
             log.info("✅ 채팅방 삭제 완료: chatRoomId={}", chatRoomId);
             return;
         }
 
-        // 5. 변경사항 저장
         chatRoomRepository.save(chatRoom);
 
         log.info("채팅방 퇴장 완료: chatRoomId={}, memberId={}, 남은 인원={}",
                 chatRoomId, memberId, chatRoom.getCurrentParticipants());
+    }
+
+    /**
+     * 채팅방 나가기 + 퇴장 메시지 (Controller 전용)
+     */
+    @Transactional
+    public void leaveChatRoomWithMessage(Long chatRoomId, Long memberId, String nickname) {
+        log.info("✅ 채팅방 나가기 + 퇴장 메시지: chatRoomId={}, memberId={}", chatRoomId, memberId);
+
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 채팅방입니다."));
+
+        // 퇴장 메시지 생성 (참여자 삭제 전에!)
+        chatMessageService.createLeaveMessage(chatRoomId, memberId, nickname);
+
+        // 나가기 처리
+        leaveChatRoom(chatRoomId, memberId);
+
+        log.info("✅ 채팅방 나가기 + 퇴장 메시지 완료: chatRoomId={}, memberId={}", chatRoomId, memberId);
+    }
+
+    /**
+     * 방장 권한 이양 (수동 선택)
+     */
+    @Transactional
+    public void transferCreator(Long chatRoomId, Long currentCreatorId, Long newCreatorId) {
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 채팅방입니다."));
+
+        // 현재 방장인지 확인
+        if (!chatRoom.getCreatorId().equals(currentCreatorId)) {
+            throw new IllegalStateException("방장만 권한을 이양할 수 있습니다.");
+        }
+
+        // 자기 자신에게 이양 불가
+        if (currentCreatorId.equals(newCreatorId)) {
+            throw new IllegalArgumentException("자기 자신에게는 권한을 이양할 수 없습니다.");
+        }
+
+        // 새 방장이 참여자인지 확인
+        ChatParticipant newCreatorParticipant = participantRepository
+                .findByChatRoomIdAndMemberId(chatRoomId, newCreatorId)
+                .orElseThrow(() -> new IllegalArgumentException("참여하지 않은 사용자입니다."));
+
+        Member newCreatorMember = newCreatorParticipant.getMember();
+
+        log.info("방장 권한 이양 시작: chatRoomId={}, {} → {}",
+                chatRoomId, currentCreatorId, newCreatorId);
+
+        // 채팅방 방장 변경
+        chatRoom.changeCreator(newCreatorId);
+        chatRoomRepository.save(chatRoom);
+
+        // 기존 방장 참여자 데이터 삭제 후 재생성 (isCreator = false)
+        participantRepository.deleteByChatRoomIdAndMemberId(chatRoomId, currentCreatorId);
+        participantRepository.flush();
+
+        Member currentCreatorMember = memberRepository.findById(currentCreatorId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+        ChatParticipant formerCreatorParticipant = ChatParticipant.builder()
+                .chatRoomId(chatRoomId)
+                .member(currentCreatorMember)
+                .isCreator(false)
+                .build();
+        participantRepository.save(formerCreatorParticipant);
+
+        // 새 방장 참여자 데이터 삭제 후 재생성 (isCreator = true)
+        participantRepository.delete(newCreatorParticipant);
+        participantRepository.flush();
+
+        ChatParticipant newCreatorAsCreator = ChatParticipant.builder()
+                .chatRoomId(chatRoomId)
+                .member(newCreatorMember)
+                .isCreator(true)
+                .build();
+        participantRepository.save(newCreatorAsCreator);
+
+        // 권한 이양 메시지 생성
+        chatMessageService.createTransferMessage(
+                chatRoomId,
+                currentCreatorMember.getNickname(),
+                newCreatorMember.getNickname()
+        );
+
+        log.info("✅ 방장 권한 이양 완료: chatRoomId={}, 새 방장={}", chatRoomId, newCreatorId);
     }
 
     /**
@@ -352,44 +410,47 @@ public class ChatRoomService {
      */
     @Transactional
     public void kickParticipant(Long chatRoomId, Long kickerId, Long targetMemberId) {
-        // 1. 채팅방 조회
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 채팅방입니다."));
 
-        // 2. 강퇴 실행자가 방장인지 확인
         if (!chatRoom.getCreatorId().equals(kickerId)) {
             throw new IllegalStateException("방장만 참여자를 강퇴할 수 있습니다.");
         }
 
-        // 3. 자기 자신은 강퇴할 수 없음
         if (kickerId.equals(targetMemberId)) {
             throw new IllegalArgumentException("자기 자신은 강퇴할 수 없습니다.");
         }
 
-        // 4. 대상 참여자 조회
         ChatParticipant targetParticipant = participantRepository
                 .findByChatRoomIdAndMemberId(chatRoomId, targetMemberId)
                 .orElseThrow(() -> new IllegalArgumentException("참여하지 않은 사용자입니다."));
 
-        // 5. 대상 회원 정보 조회
         Member targetMember = memberRepository.findById(targetMemberId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
 
         log.info("🚫 강퇴 시작: chatRoomId={}, 강퇴자={}, 대상={}",
                 chatRoomId, kickerId, targetMemberId);
 
-        // 6. 강퇴 메시지 생성 및 브로드캐스트 (참여자 삭제 전에!)
+        // 강퇴 메시지 생성 및 브로드캐스트 (참여자 삭제 전에!)
         chatMessageService.createKickMessage(chatRoomId, targetMember.getId(), targetMember.getNickname());
 
-        // 7. 참여자 삭제
+        // 참여자 삭제
         participantRepository.delete(targetParticipant);
-        log.info("✅ 참여자 삭제 완료: memberId={}", targetMemberId);
 
-        // 8. 채팅방 인원 감소
+        // 강퇴 이력 저장
+        ChatRoomBan ban = ChatRoomBan.builder()
+                .chatRoomId(chatRoomId)
+                .memberId(targetMemberId)
+                .kickedBy(kickerId)
+                .reason("방장에 의해 강퇴됨")
+                .build();
+        banRepository.save(ban);
+
+        // 채팅방 인원 감소
         chatRoom.decreaseParticipant();
         chatRoomRepository.save(chatRoom);
 
-        log.info("✅ 강퇴 완료: chatRoomId={}, 남은 인원={}",
+        log.info("강퇴 완료: chatRoomId={}, 남은 인원={}",
                 chatRoomId, chatRoom.getCurrentParticipants());
     }
 }
