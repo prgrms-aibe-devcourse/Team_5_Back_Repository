@@ -14,6 +14,8 @@ import java.util.List;
 @Repository
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
+    Long countByChatRoomId(Long chatRoomId);
+
     // 채팅방의 메시지 조회 (최신순)
     Page<ChatMessage> findByChatRoomIdOrderByCreatedAtDesc(Long chatRoomId, Pageable pageable);
 

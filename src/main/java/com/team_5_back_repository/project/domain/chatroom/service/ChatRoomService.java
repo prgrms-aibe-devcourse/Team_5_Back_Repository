@@ -47,6 +47,15 @@ public class ChatRoomService {
     private final GroupBuyingPostRepository groupBuyingPostRepository;
     private final GroupBuyingParticipantRepository groupBuyingParticipantRepository;
 
+    // 헬퍼 메서드: ChatRoom → ChatRoomResponse (닉네임 포함)
+    private ChatRoomResponse toChatRoomResponse(ChatRoom chatRoom) {
+        String creatorNickname = memberRepository.findById(chatRoom.getCreatorId())
+                .map(Member::getNickname)
+                .orElse("알 수 없음");
+
+        return ChatRoomResponse.from(chatRoom, creatorNickname);
+    }
+
     /**
      * 채팅방 생성
      */
@@ -61,6 +70,7 @@ public class ChatRoomService {
                 .creatorId(creatorId)
                 .region(request.getRegion())
                 .description(request.getDescription())
+                .category(request.getCategory())
                 .maxParticipants(request.getMaxParticipants())
                 .build();
 
@@ -74,10 +84,10 @@ public class ChatRoomService {
 
         participantRepository.save(creatorParticipant);
 
-        log.info("채팅방 생성 완료: id={}, name={}, creator={}",
-                savedRoom.getId(), savedRoom.getName(), creatorId);
+        log.info("채팅방 생성 완료: id={}, name={}, category={}, creator={}",
+                savedRoom.getId(), savedRoom.getName(), savedRoom.getCategory(), creatorId);
 
-        return ChatRoomResponse.from(savedRoom);
+        return ChatRoomResponse.from(savedRoom, creator.getNickname());
     }
 
     /**
@@ -97,7 +107,7 @@ public class ChatRoomService {
         }
 
         List<ChatRoomResponse> responses = chatRooms.stream()
-                .map(ChatRoomResponse::from)
+                .map(this::toChatRoomResponse)
                 .collect(Collectors.toList());
 
         return ChatRoomListResponse.builder()
@@ -113,7 +123,7 @@ public class ChatRoomService {
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 채팅방입니다."));
 
-        return ChatRoomResponse.from(chatRoom);
+        return toChatRoomResponse(chatRoom);
     }
 
     /**
@@ -202,9 +212,80 @@ public class ChatRoomService {
 
         boolean isCreator = chatRoom.getCreatorId().equals(memberId);
 
-        // 방장이 나가는 경우: 자동 이양 대신 예외 처리
-        if (isCreator && chatRoom.getCurrentParticipants() > 1) {
-            throw new IllegalStateException("방장은 다른 참여자에게 권한을 이양한 후 나갈 수 있습니다.");
+        // 방장이 나가는 경우
+        if (isCreator) {
+            int participantCount = chatRoom.getCurrentParticipants();
+
+            // 3명 이상이면 수동 권한 이양 필요
+            if (participantCount > 2) {
+                throw new IllegalStateException("방장은 다른 참여자에게 권한을 이양한 후 나갈 수 있습니다.");
+            }
+
+            // 2명이면 자동 권한 이양
+            if (participantCount == 2) {
+                List<ChatParticipant> participants = participantRepository
+                        .findByChatRoomIdOrderByJoinedAtAsc(chatRoomId);
+
+                // 방장 제외한 다른 참여자 찾기
+                Optional<ChatParticipant> nextCreator = participants.stream()
+                        .filter(p -> !p.getMember().getId().equals(memberId))
+                        .findFirst();
+
+                if (nextCreator.isPresent()) {
+                    Long newCreatorId = nextCreator.get().getMember().getId();
+                    Member newCreatorMember = nextCreator.get().getMember();
+
+                    log.info("2명이므로 자동 권한 이양: {} → {}", memberId, newCreatorId);
+
+                    // 채팅방 방장 변경
+                    chatRoom.changeCreator(newCreatorId);
+                    chatRoomRepository.save(chatRoom);
+
+                    // 기존 방장 참여자 삭제 후 재생성
+                    participantRepository.deleteByChatRoomIdAndMemberId(chatRoomId, memberId);
+                    participantRepository.flush();
+
+                    Member currentCreatorMember = memberRepository.findById(memberId)
+                            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+                    ChatParticipant formerCreatorParticipant = ChatParticipant.builder()
+                            .chatRoomId(chatRoomId)
+                            .member(currentCreatorMember)
+                            .isCreator(false)
+                            .build();
+                    participantRepository.save(formerCreatorParticipant);
+
+                    // 새 방장 참여자 삭제 후 재생성 (isCreator = true)
+                    participantRepository.delete(nextCreator.get());
+                    participantRepository.flush();
+
+                    ChatParticipant newCreatorAsCreator = ChatParticipant.builder()
+                            .chatRoomId(chatRoomId)
+                            .member(newCreatorMember)
+                            .isCreator(true)
+                            .build();
+                    participantRepository.save(newCreatorAsCreator);
+
+                    // 권한 이양 메시지 생성
+                    chatMessageService.createTransferMessage(
+                            chatRoomId,
+                            currentCreatorMember.getNickname(),
+                            newCreatorMember.getNickname()
+                    );
+
+                    log.info("자동 방장 권한 이양 완료: {} → {}", memberId, newCreatorId);
+
+                    // 공동구매 게시글 방장도 변경
+                    if (chatRoom.getType() == ChatRoomType.GROUP_PURCHASE) {
+                        groupBuyingPostRepository.findByChatRoomId(chatRoomId)
+                                .ifPresent(post -> {
+                                    post.changeCreator(newCreatorId);
+                                    groupBuyingPostRepository.save(post);
+                                    log.info("공동구매 게시글 방장 변경: postId={}, 새 방장={}", post.getId(), newCreatorId);
+                                });
+                    }
+                }
+            }
         }
 
         // 0. 공동구매 채팅방인 경우 먼저 공동구매에서 나가기
@@ -299,10 +380,23 @@ public class ChatRoomService {
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 채팅방입니다."));
 
-        // 퇴장 메시지 생성 (참여자 삭제 전에!)
-        chatMessageService.createLeaveMessage(chatRoomId, memberId, nickname);
+        boolean isCreator = chatRoom.getCreatorId().equals(memberId);
+        int participantCount = chatRoom.getCurrentParticipants();
 
-        // 나가기 처리
+        if (isCreator && participantCount > 2) {
+            log.warn("⚠️ 방장 퇴장 시도 (3명 이상): chatRoomId={}, participantCount={}", chatRoomId, participantCount);
+            throw new IllegalStateException("방장은 다른 참여자에게 권한을 이양한 후 나갈 수 있습니다.");
+        }
+
+        boolean willAutoTransfer = isCreator && participantCount == 2;
+
+        if (!willAutoTransfer) {
+            chatMessageService.createLeaveMessage(chatRoomId, memberId, nickname);
+            log.info("퇴장 메시지 생성: {}", nickname);
+        } else {
+            log.info("자동 권한 이양 예정 - 퇴장 메시지 생성 안 함");
+        }
+
         leaveChatRoom(chatRoomId, memberId);
 
         log.info("✅ 채팅방 나가기 + 퇴장 메시지 완료: chatRoomId={}, memberId={}", chatRoomId, memberId);
@@ -384,7 +478,7 @@ public class ChatRoomService {
         List<ChatRoomResponse> responses = participants.stream()
                 .map(p -> chatRoomRepository.findById(p.getChatRoomId()))
                 .filter(opt -> opt.isPresent() && opt.get().getIsActive())
-                .map(opt -> ChatRoomResponse.from(opt.get()))
+                .map(opt -> toChatRoomResponse(opt.get()))
                 .collect(Collectors.toList());
 
         return ChatRoomListResponse.builder()

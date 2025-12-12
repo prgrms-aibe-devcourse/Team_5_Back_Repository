@@ -140,48 +140,56 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
      * ⭐ 인증을 스킵할 경로인지 확인 (정밀한 제어)
      */
     private boolean shouldSkipAuthentication(String requestURI, String method) {
+        // Query string 제거
+        String path = requestURI.split("\\?")[0];
+
         // 정확히 일치하는 URL
-        if (excludedUrls.contains(requestURI)) {
+        if (excludedUrls.contains(path)) {
             return true;
         }
 
         // GET 요청 처리
         if ("GET".equals(method)) {
             // ⭐ 공동구매 참여자 조회는 인증 필요 (스킵 안 함)
-            if (requestURI.matches("/api/v1/group-buying/\\d+/participants")) {
+            if (path.matches("/api/v1/group-buying/\\d+/participants")) {
                 return false; // 인증 필터 통과
             }
 
             // 공동구매 목록 조회 (비회원 허용)
-            if (requestURI.equals("/api/v1/group-buying")) {
+            if (path.equals("/api/v1/group-buying")) {
                 return true;
             }
 
             // 공동구매 상세 조회 (비회원 허용)
-            if (requestURI.matches("/api/v1/group-buying/\\d+")) {
+            if (path.matches("/api/v1/group-buying/\\d+")) {
+                return true;
+            }
+
+            // 공동구매 정보 조회 (비회원 허용)
+            if (path.matches("/api/v1/group-buying/\\d+/info")) {
                 return true;
             }
 
             // ⭐ 채팅 메시지/참여자 조회는 인증 필요 (스킵 안 함)
-            if (requestURI.contains("/chatrooms/") &&
-                    (requestURI.contains("/messages") || requestURI.contains("/participants"))) {
+            if (path.contains("/chatrooms/") &&
+                    (path.contains("/messages") || path.contains("/participants"))) {
                 return false; // 인증 필터 통과
             }
 
             // 채팅방 목록/상세 조회 (비회원 허용)
-            if (requestURI.startsWith("/api/chatrooms") ||
-                    requestURI.startsWith("/api/v1/chatrooms")) {
+            if (path.startsWith("/api/chatrooms") ||
+                    path.startsWith("/api/v1/chatrooms")) {
                 return true;
             }
         }
 
         // WebSocket
-        if (requestURI.startsWith("/ws")) {
+        if (path.startsWith("/ws")) {
             return true;
         }
 
         // 지역 검색
-        if (requestURI.equals("/api/v1/region/search")) {
+        if (path.equals("/api/v1/region/search")) {
             return true;
         }
 

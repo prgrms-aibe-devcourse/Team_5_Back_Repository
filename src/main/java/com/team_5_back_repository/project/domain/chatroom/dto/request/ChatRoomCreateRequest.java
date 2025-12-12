@@ -1,6 +1,7 @@
 package com.team_5_back_repository.project.domain.chatroom.dto.request;
 
 import com.team_5_back_repository.project.domain.chatroom.entity.ChatRoomType;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -31,4 +32,7 @@ public class ChatRoomCreateRequest {
     @Min(value = 2, message = "최소 2명 이상이어야 합니다.")
     @Max(value = 50, message = "최대 50명까지 가능합니다.")
     private Integer maxParticipants;
+
+    @Schema(description = "카테고리 (맛집, 운동, 문화 등)")
+    private String category;
 }
