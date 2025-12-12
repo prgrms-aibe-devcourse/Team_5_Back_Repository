@@ -1,7 +1,7 @@
-package com.team_5_back_repository.project.domain.like.entity;
+package com.team_5_back_repository.project.domain.restaurant.soloVote.entity;
 
 import com.team_5_back_repository.project.domain.member.entity.Member;
-import com.team_5_back_repository.project.domain.post.entity.Post;
+import com.team_5_back_repository.project.domain.restaurant.entity.Restaurant;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,11 +9,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(name = "solo_vote", uniqueConstraints = @UniqueConstraint(columnNames = {"member_id","restaurant_id"}))
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Like {
+public class SoloVote {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,20 +25,9 @@ public class Like {
     private Member member;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", nullable = false)
-    private Post post;
+    @JoinColumn(name = "restaurant_id", nullable = false)
+    private Restaurant restaurant;
 
-    @Enumerated(EnumType.STRING)
-    private ReactionType type;
-
-    private boolean deleted = false;
-
-    public void react(ReactionType type) {
-        this.type = type;
-        this.deleted = false;
-    }
-
-    public void cancel() {
-        this.deleted = true;
-    }
+    @Column(nullable = false)
+    private boolean willEatAlone;
 }

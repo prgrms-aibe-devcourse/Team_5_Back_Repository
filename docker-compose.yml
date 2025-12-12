@@ -1,42 +1,42 @@
-version: '3.8'
-
-services:
-  # MySQL 데이터베이스
-  mysql:
-    image: mysql:8.0
-    container_name: onelife-mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: root1234
-      MYSQL_DATABASE: onelife_db
-      MYSQL_USER: onelife_user
-      MYSQL_PASSWORD: onelife1234
-      TZ: Asia/Seoul
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-    networks:
-      - onelife-network
-
-  # Redis (채팅 메시지 임시 저장용)
-  redis:
-    image: redis:7-alpine
-    container_name: onelife-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
-    networks:
-      - onelife-network
-
-volumes:
-  mysql_data:
-  redis_data:
-
-networks:
-  onelife-network:
-    driver: bridge
+#version: '3.8'
+#
+#services:
+#  # MySQL 데이터베이스
+#  mysql:
+#    image: mysql:8.0
+#    container_name: onelife_mysql
+#    environment:
+#      MYSQL_ROOT_PASSWORD: root1234
+#      MYSQL_DATABASE: onelife_db
+#      MYSQL_USER: onelife_user
+#      MYSQL_PASSWORD: onelife1234
+#      TZ: Asia/Seoul
+#    ports:
+#      - "3306:3306"
+#    volumes:
+#      - mysql_data:/var/lib/mysql
+#    command:
+#      - --character-set-server=utf8mb4
+#      - --collation-server=utf8mb4_unicode_ci
+#    networks:
+#      - onelife-network
+#
+#  # Redis (채팅 메시지 임시 저장용)
+#  redis:
+#    image: redis:7-alpine
+#    container_name: onelife_redis
+#    ports:
+#      - "6379:6379"
+#    volumes:
+#      - redis_data:/data
+#    command: redis-server --appendonly yes
+#    networks:
+#      - onelife-network
+#
+#volumes:
+#  mysql_data:
+#  redis_data:
+#
+#networks:
+#  onelife-network:
+#    driver: bridge

@@ -16,4 +16,5 @@ public class MemberEditDto {
     private String introduction;
     private List<RegionDto> regions;
     private String email;
+    private String profileImageUrl;
 }

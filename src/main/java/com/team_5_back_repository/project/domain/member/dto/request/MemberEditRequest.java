@@ -20,6 +20,5 @@ public class MemberEditRequest {
     @Size(max = 200, message = "소개는 200자 이하로 입력해주세요.")
     String introduction;
     @NotBlank(message = "이메일은 필수 입력 값입니다.")
-    @Email(message = "유효한 이메일 형식이 아닙니다.")
     String email;
 }

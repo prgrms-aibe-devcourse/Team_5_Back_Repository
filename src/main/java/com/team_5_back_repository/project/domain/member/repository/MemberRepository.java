@@ -20,4 +20,8 @@ public interface MemberRepository extends JpaRepository<Member, Long>{
     @EntityGraph(attributePaths = {"activityRegions", "activityRegions.region"})
     @Query("select m from Member m where m.id = :id")
     Optional<Member> findMemberWithRegions(@Param("id") Long id);
+
+    @EntityGraph(attributePaths = {"activityRegions", "activityRegions.region", "profileImage"})
+    @Query("select m from Member m where m.id = :id")
+    Optional<Member> findMemberWithRegionsAndProfileImage(@Param("id") Long id);
 }

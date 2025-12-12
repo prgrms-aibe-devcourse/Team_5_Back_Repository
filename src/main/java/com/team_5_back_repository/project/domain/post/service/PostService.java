@@ -1,5 +1,6 @@
 package com.team_5_back_repository.project.domain.post.service;
 
+import com.team_5_back_repository.project.domain.member.dto.dto.PostDto;
 import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.member.repository.MemberRepository;
 import com.team_5_back_repository.project.domain.post.dto.PostRequest;
@@ -9,6 +10,11 @@ import com.team_5_back_repository.project.domain.post.entity.PostType;
 import com.team_5_back_repository.project.domain.post.repository.PostRepository;
 import com.team_5_back_repository.project.domain.post.repository.TagRepository;
 import com.team_5_back_repository.project.domain.post.entity.Tag;
+import com.team_5_back_repository.project.domain.post.util.SecurityUtil;
+import com.team_5_back_repository.project.global.security.SecurityUser;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,6 +26,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -51,20 +58,38 @@ public class PostService {
         return saved.getId();
     }
     @Transactional(readOnly = true)
-    public PostResponse getPost(Long id, boolean increaseView) {
+    public PostResponse getPost(Long id, boolean increaseView, Long  currentMemberId) {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("게시글 없음"));
         if (increaseView) {
             post.increaseViewCount();
         }
-        return PostResponse.from(post);
+        log.info("getPost called — currentMemberId = {}, postAuthorId = {}", currentMemberId, post.getMember().getId());
+        boolean isAdmin = SecurityUtil.isAdmin();
+        return PostResponse.from(post, currentMemberId, isAdmin);
     }
     @Transactional(readOnly = true)
     public Page<PostResponse> listPosts(PostType postType, Pageable pageable) {
-        return postRepository.findByPostType(postType, pageable)
-                .map(PostResponse::from);
+        Page<Post> posts = postRepository.findByPostType(postType, pageable);
+
+        Long currentMemberId = SecurityUtil.getCurrentUserId();
+        boolean isAdmin = SecurityUtil.isAdmin();
+        return posts.map(post ->
+                PostResponse.from(post, currentMemberId, isAdmin)
+        );
     }
 
+    @Transactional(readOnly = true)
+    public Page<PostResponse> listAllPosts(Pageable pageable) {
+        Page<Post> posts = postRepository.findAll(pageable);
+
+        Long currentMemberId = SecurityUtil.getCurrentUserId();
+        boolean isAdmin = SecurityUtil.isAdmin();
+
+        return posts.map(post ->
+                PostResponse.from(post, currentMemberId, isAdmin)
+        );
+    }
     public PostResponse updatePost(Long id, PostRequest request, Long memberId) {
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new RuntimeException("사용자 없음"));
         Post post = postRepository.findById(id)
@@ -81,9 +106,13 @@ public class PostService {
                 request.getPostType(),
                 tags
         );
-        return PostResponse.from(post);
+
+        Long currentMemberId = SecurityUtil.getCurrentUserId();
+        boolean isAdmin = SecurityUtil.isAdmin();
+        return PostResponse.from(post, currentMemberId, isAdmin);
     }
 
+    @Transactional
     public  void deletePost(Long id, Long memberId) {
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new RuntimeException("사용자 없음"));
         Post post = postRepository.findById(id)
@@ -122,5 +151,16 @@ public class PostService {
     // 멤버 별 게시글 수 조회 (마이 페이지 등에서 사용)
     public Long countPostsByMember(Member member) {
         return postRepository.countByMember(member);
+    }
+
+    public Page<PostDto> getPostsByMember(Member member, Pageable pageable, PostType postType) {
+        Page<PostDto> posts;
+        if(postType == PostType.ALL) {
+            posts = postRepository.findPostByMember(member, pageable);
+        } else {
+            posts = postRepository.findPostByMemberAndType(member, postType, pageable);
+        }
+        System.out.println("타입 : " + postType);
+        return posts;
     }
 }

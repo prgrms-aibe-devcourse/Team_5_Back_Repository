@@ -43,7 +43,6 @@ public class EmailController {
     public RsData<Boolean> verifyEmail(@RequestParam String email, @RequestParam Integer verificationCode) {
         boolean isVerified = emailService.verifyCode(email, verificationCode);
         if(isVerified) return new RsData<>("200", "인증 완료", true);
-            //else return new RsData<>("200", "인증 실패", false); TODO 임시 인증완료 처리, 나중에 수정
-        else return new RsData<>("200", "인증 완료", true);
+        else return new RsData<>("200", "인증 실패", false);
     }
 }

@@ -18,10 +18,13 @@ public class Restaurant extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "owner_id", nullable = true)
+    private Long ownerId;
+
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, length = 30)
+    @Column(nullable = true, length = 30)
     private String phone;
 
     @Column(nullable = false)
@@ -41,6 +44,13 @@ public class Restaurant extends BaseEntity {
 
     @Column(nullable = false)
     private long reviewCount;
+
+    @Column(nullable = true)
+    private String image;
+
+    public void setImage(String image) {
+        this.image = image;
+    }
 
     public void applyNewRating(int rating) {
         double total = averageRating * reviewCount + rating;

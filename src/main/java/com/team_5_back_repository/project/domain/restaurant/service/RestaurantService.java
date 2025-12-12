@@ -14,12 +14,15 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
+import com.team_5_back_repository.project.domain.review.repository.ReviewRepository;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class RestaurantService {
 
     private final RestaurantRepository restaurantRepository;
+    private final ReviewRepository reviewRepository;
 
     public List<RestaurantDto> getNearby(double lat, double lng, double radiusKm) {
         double latDelta = radiusKm / 111.32;
@@ -43,8 +46,35 @@ public class RestaurantService {
     }
 
     @Transactional
-    public RestaurantDto create(RestaurantCreateRequest req) {
-        Restaurant restaurant = Restaurant.builder()
+    public RestaurantDto create(RestaurantCreateRequest req, Long ownerId, boolean asImported) {
+        double lat = req.latitude();
+        double lng = req.longitude();
+
+        try {
+            System.out.println("[RestaurantService] create called asImported=" + asImported + " ownerId=" + ownerId + " name=" + req.name() + " lat=" + req.latitude() + " lng=" + req.longitude());
+        } catch (Exception e) {}
+        if (!asImported && ownerId == null) {
+            double tolKm = 0.05;
+            double tolLat = tolKm / 111.32;
+            double tolLng = tolKm / (111.32 * Math.cos(Math.toRadians(lat == 0.0 ? 0.0001 : lat)));
+            double minLat = lat - tolLat;
+            double maxLat = lat + tolLat;
+            double minLng = lng - tolLng;
+            double maxLng = lng + tolLng;
+
+            List<Restaurant> candidates = restaurantRepository.findByLatitudeBetweenAndLongitudeBetween(minLat, maxLat, minLng, maxLng);
+            for (Restaurant c : candidates) {
+                double distKm = haversine(lat, lng, c.getLatitude(), c.getLongitude());
+                if (distKm <= tolKm) {
+                    try {
+                        System.out.println("[RestaurantService] nearby candidate matched id=" + c.getId() + " name=" + c.getName() + " distKm=" + distKm);
+                    } catch (Exception e) {}
+                    return RestaurantDto.of(c, distKm);
+                }
+            }
+        }
+
+        Restaurant.RestaurantBuilder builder = Restaurant.builder()
                 .name(req.name())
                 .jibunAddress(req.jibunAddress())
                 .roadAddress(req.roadAddress())
@@ -52,10 +82,30 @@ public class RestaurantService {
                 .latitude(req.latitude())
                 .longitude(req.longitude())
                 .averageRating(0.0)
-                .reviewCount(0L)
-                .build();
+                .reviewCount(0L);
+
+        if (ownerId != null) {
+            builder.ownerId(ownerId);
+        }
+
+        Restaurant restaurant = builder.build();
         Restaurant saved = restaurantRepository.save(restaurant);
+        try {
+            System.out.println("[RestaurantService] saved new restaurant id=" + saved.getId() + " name=" + saved.getName());
+        } catch (Exception e) {}
         return RestaurantDto.of(saved, 0.0);
+    }
+
+    @Transactional
+    public RestaurantDto setImage(Long id, String imageUrl, Long actorId) {
+        Restaurant r = restaurantRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("restaurant not found"));
+        if (r.getOwnerId() == null || !r.getOwnerId().equals(actorId)) {
+            throw new IllegalArgumentException("only owner can set image");
+        }
+        r.setImage(imageUrl);
+        restaurantRepository.save(r);
+        return RestaurantDto.of(r, 0.0);
     }
 
     public RestaurantDto getById(Long id) {
@@ -76,6 +126,11 @@ public class RestaurantService {
     public void delete(Long id) {
         Restaurant r = restaurantRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("restaurant not found"));
+        try {
+            reviewRepository.deleteByRestaurantId(id);
+        } catch (Exception e) {
+
+        }
         restaurantRepository.delete(r);
     }
 
@@ -88,5 +143,13 @@ public class RestaurantService {
                         Math.sin(dLon / 2) * Math.sin(dLon / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c;
+    }
+
+    public List<RestaurantDto> list(String keyword) {
+        List<Restaurant> all = restaurantRepository.findAll();
+        return all.stream()
+                .filter(r -> keyword == null || keyword.isBlank() || r.getName().contains(keyword))
+                .map(r -> RestaurantDto.of(r, 0.0))
+                .collect(Collectors.toList());
     }
 }
