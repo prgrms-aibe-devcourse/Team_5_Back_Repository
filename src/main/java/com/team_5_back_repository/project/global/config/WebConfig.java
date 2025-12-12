@@ -11,7 +11,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")  // 모든 경로에 대해
                 .allowedOrigins("http://localhost:3000",
-                        "https://resreqonelifefront.vercel.app",
+                        "https://www.onelife.mwan.site",
                         "https://onelife.mwan.site")  // Next.js 개발 서버 허용
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                 .allowedHeaders("*")

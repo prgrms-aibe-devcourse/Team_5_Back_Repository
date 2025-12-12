@@ -48,7 +48,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns(
                         "http://localhost:3000",
-                        "https://resreqonelifefront.vercel.app",
+                        "https://www.onelife.mwan.site",
                         "https://onelife.mwan.site")
                 .withSockJS();
     }
