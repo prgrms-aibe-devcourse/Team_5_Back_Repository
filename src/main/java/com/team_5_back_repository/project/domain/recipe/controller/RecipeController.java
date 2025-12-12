@@ -4,7 +4,10 @@ import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.recipe.dto.RecipeGenerateRequest;
 import com.team_5_back_repository.project.domain.recipe.dto.RecipeResponse;
 import com.team_5_back_repository.project.domain.recipe.dto.RecipeSaveRequest;
+import com.team_5_back_repository.project.domain.recipe.dto.ShareLinkResponse;
+import com.team_5_back_repository.project.domain.recipe.dto.YoutubeVideoResponse;
 import com.team_5_back_repository.project.domain.recipe.service.RecipeService;
+import com.team_5_back_repository.project.domain.recipe.service.YoutubeService;
 import com.team_5_back_repository.project.global.rsData.RsData;
 import com.team_5_back_repository.project.global.security.SecurityUser;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RecipeController {
     private final RecipeService recipeService;
+    private final YoutubeService youtubeService;
 
     // AI 레시피 생성 (회원/비회원)
     @PostMapping("/generate")
@@ -111,6 +115,55 @@ public class RecipeController {
                 "200-5",
                 "레시피 삭제 성공",
                 null
+        );
+    }
+
+    // 공유 링크 생성
+    @PostMapping("/{id}/share")
+    public RsData<ShareLinkResponse> createShareLink(
+            @AuthenticationPrincipal SecurityUser user,
+            @PathVariable Long id,
+            @RequestParam(required = false) String frontendBaseUrl) {
+        if (user == null) {
+            return new RsData<>("401-1", "로그인이 필요합니다.", null);
+        }
+
+        // frontendBaseUrl이 없으면 기본값 사용
+        if (frontendBaseUrl == null || frontendBaseUrl.isEmpty()) {
+            frontendBaseUrl = "http://localhost:3000"; // 기본값
+        }
+
+        ShareLinkResponse shareLink = recipeService.createShareLink(id, user.getId(), frontendBaseUrl);
+
+        return new RsData<>(
+                "200-6",
+                "공유 링크 생성 성공",
+                shareLink
+        );
+    }
+
+    // 공유 링크로 레시피 조회 (공개 API)
+    @GetMapping("/shared/{shareToken}")
+    public RsData<RecipeResponse> getRecipeByShareToken(
+            @PathVariable String shareToken) throws Exception {
+        RecipeResponse recipe = recipeService.getRecipeByShareToken(shareToken);
+
+        return new RsData<>(
+                "200-7",
+                "공유 레시피 조회 성공",
+                recipe
+        );
+    }
+
+    // 레시피 제목으로 관련 유튜브 영상 검색
+    @GetMapping("/youtube")
+    public RsData<YoutubeVideoResponse> searchYoutubeByTitle(@RequestParam String title) {
+        YoutubeVideoResponse video = youtubeService.searchByTitle(title);
+
+        return new RsData<>(
+                "200-8",
+                "유튜브 영상 검색 성공",
+                video
         );
     }
 }

@@ -14,4 +14,7 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
 
     // 회원이 저장한 레시피만 (마이페이지)
     List<Recipe> findAllByMemberIdAndStatus(Long memberId, RecipeStatus status);
+
+    // 공유 토큰으로 레시피 조회
+    Recipe findByShareToken(String shareToken);
 }
