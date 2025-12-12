@@ -1,5 +1,8 @@
 package com.team_5_back_repository.project.domain.post.service;
 
+
+import com.team_5_back_repository.project.domain.bookmark.entity.BookmarkType;
+import com.team_5_back_repository.project.domain.bookmark.repository.BookmarkRepository;
 import com.team_5_back_repository.project.domain.member.dto.dto.PostDto;
 import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.member.repository.MemberRepository;
@@ -11,20 +14,19 @@ import com.team_5_back_repository.project.domain.post.repository.PostRepository;
 import com.team_5_back_repository.project.domain.post.repository.TagRepository;
 import com.team_5_back_repository.project.domain.post.entity.Tag;
 import com.team_5_back_repository.project.domain.post.util.SecurityUtil;
-import com.team_5_back_repository.project.global.security.SecurityUser;
+import com.team_5_back_repository.project.global.cloudstorage.entity.FileEntity;
+import com.team_5_back_repository.project.global.cloudstorage.repository.FileEntityRepository;
+import com.team_5_back_repository.project.global.cloudstorage.service.StorageService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -34,12 +36,15 @@ public class PostService {
     private final PostRepository postRepository;
     private final MemberRepository memberRepository;
     private final TagRepository tagRepository;
+    private final StorageService storageService;
+    private final FileEntityRepository fileEntityRepository;
+    private final BookmarkRepository bookmarkRepository;
 
-    public Long createPost(PostRequest request, Long memberId) {
+    public Long createPost(PostRequest request, List<MultipartFile> files, Long memberId) {
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new RuntimeException("사용자 없음"));
 
         PostType postType = Objects.requireNonNullElse(request.getPostType(), PostType.FREE);
-        if(postType.isAdminOnly())//추후 관리자 권한 추가 Ex) && !member.isAdmin()
+        if(postType.isAdminOnly() && !member.isAdmin())
         {
             throw new RuntimeException("관리자만 작성 가능");
         }
@@ -55,18 +60,36 @@ public class PostService {
                 .build();
 
         Post saved = postRepository.save(post);
+
+        if (files != null && !files.isEmpty()) {
+            List<FileEntity> uploaded = storageService.multiUpload(files, "posts");
+            uploaded.forEach(f -> f.setPost(saved));
+            saved.getAttachmentPath().addAll(uploaded);
+        }
         return saved.getId();
     }
+
     @Transactional(readOnly = true)
-    public PostResponse getPost(Long id, boolean increaseView, Long  currentMemberId) {
+    public PostResponse getPost(Long id, Long  currentMemberId) {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("게시글 없음"));
-        if (increaseView) {
-            post.increaseViewCount();
+
+        Member currentUser = null;
+        if (currentMemberId != null) {
+            currentUser = memberRepository.findById(currentMemberId)
+                    .orElse(null);
         }
-        log.info("getPost called — currentMemberId = {}, postAuthorId = {}", currentMemberId, post.getMember().getId());
         boolean isAdmin = SecurityUtil.isAdmin();
-        return PostResponse.from(post, currentMemberId, isAdmin);
+        boolean isBookmarked = false;
+        if (currentMemberId != null) {
+            isBookmarked = bookmarkRepository.existsByMemberAndBookmarkTypeAndTargetId(
+                    currentUser,
+                    BookmarkType.POST,
+                    post.getId()
+            );
+        }
+
+        return PostResponse.from(post, currentMemberId, isAdmin,isBookmarked);
     }
     @Transactional(readOnly = true)
     public Page<PostResponse> listPosts(PostType postType, Pageable pageable) {
@@ -74,9 +97,28 @@ public class PostService {
 
         Long currentMemberId = SecurityUtil.getCurrentUserId();
         boolean isAdmin = SecurityUtil.isAdmin();
-        return posts.map(post ->
-                PostResponse.from(post, currentMemberId, isAdmin)
-        );
+
+        Member currentUser = null;
+        if (currentMemberId != null) {
+            currentUser = memberRepository.findById(currentMemberId).orElse(null);
+        }
+
+        Member finalCurrentUser = currentUser;
+
+        return posts.map(post -> {
+            boolean isBookmarked = false;
+
+            if (finalCurrentUser != null) {
+                isBookmarked = bookmarkRepository
+                        .existsByMemberAndBookmarkTypeAndTargetId(
+                                finalCurrentUser,
+                                BookmarkType.POST,
+                                post.getId()
+                        );
+            }
+
+            return PostResponse.from(post, currentMemberId, isAdmin, isBookmarked);
+        });
     }
 
     @Transactional(readOnly = true)
@@ -85,10 +127,27 @@ public class PostService {
 
         Long currentMemberId = SecurityUtil.getCurrentUserId();
         boolean isAdmin = SecurityUtil.isAdmin();
+        Member currentUser = null;
+        if (currentMemberId != null) {
+            currentUser = memberRepository.findById(currentMemberId).orElse(null);
+        }
 
-        return posts.map(post ->
-                PostResponse.from(post, currentMemberId, isAdmin)
-        );
+        Member finalCurrentUser = currentUser;
+
+        return posts.map(post -> {
+            boolean isBookmarked = false;
+
+            if (finalCurrentUser != null) {
+                isBookmarked = bookmarkRepository
+                        .existsByMemberAndBookmarkTypeAndTargetId(
+                                finalCurrentUser,
+                                BookmarkType.POST,
+                                post.getId()
+                        );
+            }
+
+            return PostResponse.from(post, currentMemberId, isAdmin, isBookmarked);
+        });
     }
     public PostResponse updatePost(Long id, PostRequest request, Long memberId) {
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new RuntimeException("사용자 없음"));
@@ -99,17 +158,50 @@ public class PostService {
             throw new RuntimeException("수정 권한 없음");
         }
         Set<Tag> tags = processTags(request.getTags());
+
+        List<FileEntity> newUrls = new ArrayList<>();
+        if (request.getRemainFileUrls() != null) {
+            for (String url : request.getRemainFileUrls()) {
+                fileEntityRepository.findByImgUrl(url).ifPresent(fe -> {
+                    fe.setPost(post);
+                    newUrls.add(fe);
+                });;
+            }
+        }
+
+        if (request.getFiles() != null && !request.getFiles().isEmpty()) {
+            List<FileEntity> newFiles = storageService.multiUpload(request.getFiles(), "post");
+            for (FileEntity fe : newFiles) {
+                fe.setPost(post);
+            }
+            newUrls.addAll(newFiles);
+        }
+
         post.update(
                 request.getTitle(),
                 request.getContent(),
-                request.getAttachmentPath(),
+                newUrls,
                 request.getPostType(),
                 tags
         );
 
         Long currentMemberId = SecurityUtil.getCurrentUserId();
         boolean isAdmin = SecurityUtil.isAdmin();
-        return PostResponse.from(post, currentMemberId, isAdmin);
+        Member currentUser = null;
+        if (currentMemberId != null) {
+            currentUser = memberRepository.findById(currentMemberId).orElse(null);
+        }
+
+        boolean isBookmarked = false;
+        if (currentUser != null) {
+            isBookmarked = bookmarkRepository
+                    .existsByMemberAndBookmarkTypeAndTargetId(
+                            currentUser,
+                            BookmarkType.POST,
+                            post.getId()
+                    );
+        }
+        return PostResponse.from(post, currentMemberId, isAdmin, isBookmarked);
     }
 
     @Transactional
@@ -153,6 +245,11 @@ public class PostService {
         return postRepository.countByMember(member);
     }
 
+    public void increaseView(Long id) {
+        int updated = postRepository.incrementViewCount(id);
+        if (updated == 0) throw new RuntimeException("게시글 없음 (id=" + id + ")");
+    }
+
     public Page<PostDto> getPostsByMember(Member member, Pageable pageable, PostType postType) {
         Page<PostDto> posts;
         if(postType == PostType.ALL) {
@@ -162,5 +259,6 @@ public class PostService {
         }
         System.out.println("타입 : " + postType);
         return posts;
+
     }
 }

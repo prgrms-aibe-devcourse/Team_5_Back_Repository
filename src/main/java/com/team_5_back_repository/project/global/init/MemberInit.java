@@ -73,6 +73,7 @@ public class MemberInit {
                             .postType(PostType.FREE)
                             .tags(Set.of("테스트", "게시글"))
                             .build(),
+                    new ArrayList<>(),
                     1L
             );
             commentService.createComment(i+1L, 1L, new CommentRequest("테스트 댓글 " + (i + 1)));
@@ -86,6 +87,7 @@ public class MemberInit {
                             .postType(PostType.TIP)
                             .tags(Set.of("테스트", "게시글"))
                             .build(),
+                    new ArrayList<>(),
                     1L
             );
             commentService.createComment(i+11L, 1L, new CommentRequest("테스트 댓글 " + (i + 1)));

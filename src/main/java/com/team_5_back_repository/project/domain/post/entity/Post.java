@@ -3,6 +3,7 @@ package com.team_5_back_repository.project.domain.post.entity;
 import com.team_5_back_repository.project.domain.comment.entity.Comment;
 import com.team_5_back_repository.project.domain.like.entity.PostLike;
 import com.team_5_back_repository.project.domain.member.entity.Member;
+import com.team_5_back_repository.project.global.cloudstorage.entity.FileEntity;
 import com.team_5_back_repository.project.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -29,8 +30,9 @@ public class Post extends BaseEntity{
     @Column(nullable=false)
     private String content;
 
-    @Column(nullable = true)
-    private String attachmentPath;
+    @Builder.Default
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FileEntity> attachmentPath = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
@@ -66,18 +68,22 @@ public class Post extends BaseEntity{
     @Builder.Default
     private List<PostLike> likes = new ArrayList<>();
 
-    public void update(String title, String content, String attachmentPath, PostType postType, Set<Tag> tags) {
+    public void update(String title,
+                       String content,
+                       List<FileEntity> attachmentPath,
+                       PostType postType,
+                       Set<Tag> tags) {
         this.title = title;
         this.content = content;
-        this.attachmentPath = attachmentPath;
+        this.attachmentPath.clear();
+        if (attachmentPath != null && !attachmentPath.isEmpty()) {
+            this.attachmentPath.addAll(attachmentPath);
+        }
         this.postType = postType;
         this.tags.clear();
         if (tags != null) {
             this.tags.addAll(tags);
         }
-    }
-    public void increaseViewCount() {
-        this.viewCount += 1;
     }
 
     public void increaseLike() { this.likeCount++;
@@ -90,9 +96,6 @@ public class Post extends BaseEntity{
 }
     public void decreaseDislike() { if (this.dislikeCount > 0) this.dislikeCount--; }
 
-    public int getRecommendCount() {
-        return this.likeCount;
-    }
     public int getDislikeCount() {
         return this.dislikeCount;
     }
