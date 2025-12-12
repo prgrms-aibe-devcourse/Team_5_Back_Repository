@@ -4,5 +4,6 @@ public enum RecipeCategory {
     KOREAN,
     WESTERN,
     JAPANESE,
-    CHINESE
+    CHINESE,
+    DESSERT
 }

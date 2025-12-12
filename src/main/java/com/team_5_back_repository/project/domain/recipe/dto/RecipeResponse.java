@@ -25,4 +25,6 @@ public class RecipeResponse {
     private List<String> steps;
 
     private RecipeStatus status;
+
+    private String youtubeUrl;
 }
