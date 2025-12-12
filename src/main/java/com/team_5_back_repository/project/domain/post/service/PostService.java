@@ -1,5 +1,6 @@
 package com.team_5_back_repository.project.domain.post.service;
 
+import com.team_5_back_repository.project.domain.member.dto.dto.PostDto;
 import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.member.repository.MemberRepository;
 import com.team_5_back_repository.project.domain.post.dto.PostRequest;
@@ -150,5 +151,16 @@ public class PostService {
     // 멤버 별 게시글 수 조회 (마이 페이지 등에서 사용)
     public Long countPostsByMember(Member member) {
         return postRepository.countByMember(member);
+    }
+
+    public Page<PostDto> getPostsByMember(Member member, Pageable pageable, PostType postType) {
+        Page<PostDto> posts;
+        if(postType == PostType.ALL) {
+            posts = postRepository.findPostByMember(member, pageable);
+        } else {
+            posts = postRepository.findPostByMemberAndType(member, postType, pageable);
+        }
+        System.out.println("타입 : " + postType);
+        return posts;
     }
 }

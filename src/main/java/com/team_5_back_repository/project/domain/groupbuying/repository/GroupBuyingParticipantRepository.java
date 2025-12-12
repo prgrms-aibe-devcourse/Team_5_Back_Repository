@@ -1,7 +1,13 @@
 package com.team_5_back_repository.project.domain.groupbuying.repository;
 
 import com.team_5_back_repository.project.domain.groupbuying.entity.GroupBuyingParticipant;
+import com.team_5_back_repository.project.domain.member.dto.dto.GroupBuyDto;
+import com.team_5_back_repository.project.domain.member.entity.Member;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -26,4 +32,30 @@ public interface GroupBuyingParticipantRepository extends JpaRepository<GroupBuy
     void deleteByGroupBuyingPostIdAndMember_Id(Long groupBuyingPostId, Long memberId);
 
     void deleteByGroupBuyingPostId(Long groupBuyingPostId);
+
+    @Query(
+            value = """
+        SELECT new com.team_5_back_repository.project.domain.member.dto.dto.GroupBuyDto(
+            gbp.chatRoomId,
+            cr.name,
+            gbp.status,
+            cr.currentParticipants,
+            cr.maxParticipants,
+            gbp.createdAt
+        )
+        FROM GroupBuyingParticipant gp
+        JOIN GroupBuyingPost gbp ON gbp.id = gp.groupBuyingPostId
+        JOIN ChatRoom cr ON cr.id = gbp.chatRoomId
+        WHERE gp.member = :member
+    """,
+            countQuery = """
+        SELECT COUNT(gp)
+        FROM GroupBuyingParticipant gp
+        WHERE gp.member = :member
+    """
+    )
+    Page<GroupBuyDto> findByMember(
+            @Param("member") Member member,
+            Pageable pageable
+    );
 }

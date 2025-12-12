@@ -13,6 +13,7 @@ import com.team_5_back_repository.project.domain.chatroom.repository.ChatRoomRep
 import com.team_5_back_repository.project.domain.chatroom.repository.ChatRoomBanRepository;
 import com.team_5_back_repository.project.domain.groupbuying.entity.GroupBuyingParticipant;
 import com.team_5_back_repository.project.domain.groupbuying.entity.GroupBuyingStatus;
+import com.team_5_back_repository.project.domain.member.dto.dto.GroupChatDto;
 import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.member.repository.MemberRepository;
 import com.team_5_back_repository.project.domain.groupbuying.entity.GroupBuyingPost;
@@ -20,6 +21,8 @@ import com.team_5_back_repository.project.domain.groupbuying.repository.GroupBuy
 import com.team_5_back_repository.project.domain.groupbuying.repository.GroupBuyingParticipantRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -482,6 +485,11 @@ public class ChatRoomService {
                 .chatRooms(responses)
                 .totalCount(responses.size())
                 .build();
+    }
+
+    //마이 페이지 용 채팅방 목록 조회
+    public Page<GroupChatDto> getGroupsByMember(Member member, Pageable pageable) {
+        return participantRepository.findByMember(member, pageable);
     }
 
     /**

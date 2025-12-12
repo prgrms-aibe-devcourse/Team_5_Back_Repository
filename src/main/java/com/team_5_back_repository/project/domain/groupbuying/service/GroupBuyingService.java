@@ -18,12 +18,15 @@ import com.team_5_back_repository.project.domain.groupbuying.entity.GroupBuyingP
 import com.team_5_back_repository.project.domain.groupbuying.entity.GroupBuyingStatus;
 import com.team_5_back_repository.project.domain.groupbuying.repository.GroupBuyingParticipantRepository;
 import com.team_5_back_repository.project.domain.groupbuying.repository.GroupBuyingPostRepository;
+import com.team_5_back_repository.project.domain.member.dto.dto.GroupBuyDto;
 import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.member.repository.MemberRepository;
 import com.team_5_back_repository.project.global.cloudstorage.entity.FileEntity;
 import com.team_5_back_repository.project.global.cloudstorage.repository.FileEntityRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -459,5 +462,10 @@ public class GroupBuyingService {
         }
 
         return response;
+    }
+
+    // 마이페이지 참여중인 공동구매 목록 조회
+    public Page<GroupBuyDto> getParticipatingGroupBuys(Member member, Pageable pageable) {
+        return participantRepository.findByMember(member, pageable);
     }
 }

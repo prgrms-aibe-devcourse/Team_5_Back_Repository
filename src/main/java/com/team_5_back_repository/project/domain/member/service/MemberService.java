@@ -1,5 +1,7 @@
 package com.team_5_back_repository.project.domain.member.service;
 
+import com.team_5_back_repository.project.domain.comment.entity.Comment;
+import com.team_5_back_repository.project.domain.comment.service.CommentService;
 import com.team_5_back_repository.project.domain.member.dto.dto.*;
 import com.team_5_back_repository.project.domain.member.dto.request.ChangePasswordRequest;
 import com.team_5_back_repository.project.domain.member.dto.request.MemberEditRequest;
@@ -14,6 +16,7 @@ import com.team_5_back_repository.project.domain.post.service.PostService;
 import com.team_5_back_repository.project.global.cloudstorage.entity.FileEntity;
 import com.team_5_back_repository.project.global.cloudstorage.service.StorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +35,7 @@ public class MemberService {
     private final RegionService regionService;
     private final PasswordEncoder passwordEncoder;
     private final PostService postService;
+    private final CommentService commentService;
     private final StorageService storageService;
     public long countMembers() {
         return memberRepository.count();
@@ -192,7 +196,7 @@ public class MemberService {
         String profileImgUrl = member.getProfileImage() != null ? member.getProfileImage().getImgUrl() : null;
 
         Long postCount = postService.countPostsByMember(member);
-        Long commentCount = 0L; // TODO 댓글, 좋아요, 팔로워, 팔로잉 추후 구현 필요
+        Long commentCount = commentService.countCommentByMember(member); // TODO 댓글, 좋아요, 팔로워, 팔로잉 추후 구현 필요
         Long likeCount = 0L; // 추후 구현 필요
         Long followerCount = 0L; // 추후 구현 필요
         Long followingCount = 0L; // 추후 구현 필요
