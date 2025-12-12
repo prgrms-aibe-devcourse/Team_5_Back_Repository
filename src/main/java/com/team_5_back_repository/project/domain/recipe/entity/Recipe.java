@@ -48,4 +48,14 @@ public class Recipe {
 
     @Enumerated(EnumType.STRING)
     private RecipeStatus status;
+
+    private String youtubeUrl;
+
+    @Column(unique = true)
+    private String shareToken; // 공유 링크 토큰
+
+    // 공유 토큰 설정 메서드
+    public void setShareToken(String shareToken) {
+        this.shareToken = shareToken;
+    }
 }

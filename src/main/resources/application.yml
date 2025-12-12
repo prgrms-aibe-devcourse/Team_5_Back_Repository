@@ -98,6 +98,9 @@ openai:
   api-key: ${OPENAI_API_KEY}
   model: gpt-4o-mini
 
+youtube:
+  api-key: ${YOUTUBE_API_KEY}
+
 region:
   secret-key: ${REGION_API_KEY}
 
