@@ -37,6 +37,9 @@ public class ChatRoom {
     @Column(length = 500)
     private String description;  // 채팅방 설명
 
+    @Column(length = 50)
+    private String category;  // 카테고리 (맛집, 운동, 문화 등)
+
     @Column(nullable = false)
     private Integer maxParticipants;  // 최대 인원
 
@@ -52,14 +55,15 @@ public class ChatRoom {
 
     @Builder
     public ChatRoom(String name, ChatRoomType type, Long creatorId, String region,
-                    String description, Integer maxParticipants) {
+                    String description, String category, Integer maxParticipants) {
         this.name = name;
         this.type = type;
         this.creatorId = creatorId;
         this.region = region;
         this.description = description;
+        this.category = category;
         this.maxParticipants = maxParticipants;
-        this.currentParticipants = 1;  // 생성자 포함
+        this.currentParticipants = 1;
     }
 
     // 참여자 증가

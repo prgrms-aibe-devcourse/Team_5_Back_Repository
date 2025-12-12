@@ -1,5 +1,7 @@
 package com.team_5_back_repository.project.domain.groupbuying.entity;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -10,6 +12,9 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Entity
 @Getter
@@ -59,6 +64,12 @@ public class GroupBuyingPost {
     @Column(nullable = false)
     private String region;  // 지역
 
+    @Column(name = "view_count", nullable = false)
+    private Long viewCount = 0L;
+
+    @Column(name = "images", columnDefinition = "TEXT")
+    private String images;
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -83,6 +94,39 @@ public class GroupBuyingPost {
         this.currentAmount = 0;
         this.currentParticipants = 0;
         this.status = GroupBuyingStatus.RECRUITING;
+        this.viewCount = 0L;
+    }
+
+    public void incrementViewCount() {
+        if (this.viewCount == null) {
+            this.viewCount = 0L;
+        }
+        this.viewCount++;
+    }
+
+    public List<String> getImageList() {
+        if (images == null || images.isEmpty() || images.equals("[]")) {
+            return Collections.emptyList();
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(images, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+    public void setImageList(List<String> imageList) {
+        if (imageList == null || imageList.isEmpty()) {
+            this.images = "[]";
+            return;
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            this.images = mapper.writeValueAsString(imageList);
+        } catch (Exception e) {
+            this.images = "[]";
+        }
     }
 
     // 참여자 증가
@@ -156,5 +200,10 @@ public class GroupBuyingPost {
         this.category = category;
         this.region = region;
         this.deadline = deadline;
+    }
+
+    // 방장 변경 메서드
+    public void changeCreator(Long newCreatorId) {
+        this.creatorId = newCreatorId;
     }
 }

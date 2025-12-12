@@ -8,12 +8,15 @@ import com.team_5_back_repository.project.domain.groupbuying.dto.response.GroupB
 import com.team_5_back_repository.project.domain.groupbuying.entity.GroupBuyingStatus;
 import com.team_5_back_repository.project.domain.groupbuying.service.GroupBuyingService;
 import com.team_5_back_repository.project.domain.member.entity.Member;
+import com.team_5_back_repository.project.global.cloudstorage.entity.FileEntity;
+import com.team_5_back_repository.project.global.cloudstorage.service.StorageService;
 import com.team_5_back_repository.project.global.security.Rq.Rq;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -24,7 +27,43 @@ import java.util.List;
 public class GroupBuyingController {
 
     private final GroupBuyingService groupBuyingService;
+    private final StorageService storageService;
     private final Rq rq;
+
+    /**
+     * 공동구매 이미지 업로드 (최대 1개)
+     * 로그인 필수
+     */
+    @PostMapping("/images")
+    public ResponseEntity<List<FileEntity>> uploadImages(
+            @RequestParam("images") List<MultipartFile> images) {
+
+        // 로그인 확인
+        Member actor = rq.getActor();
+        if (actor == null) {
+            throw new IllegalArgumentException("로그인이 필요한 기능입니다.");
+        }
+
+        // 이미지 개수 검증 (최대 1개)
+        if (images == null || images.isEmpty()) {
+            throw new IllegalArgumentException("업로드할 이미지가 없습니다.");
+        }
+
+        if (images.size() > 1) {
+            throw new IllegalArgumentException("이미지는 최대 1개까지 업로드 가능합니다.");
+        }
+
+        log.info("공동구매 이미지 업로드 시작: memberId={}, imageCount={}",
+                actor.getId(), images.size());
+
+        // S3 업로드
+        List<FileEntity> uploadedFiles = storageService.multiUpload(images, "group-buying");
+
+        log.info("공동구매 이미지 업로드 완료: memberId={}, uploadedCount={}",
+                actor.getId(), uploadedFiles.size());
+
+        return ResponseEntity.ok(uploadedFiles);
+    }
 
     /**
      * 공동구매 게시글 생성 (로그인 필수)
@@ -57,14 +96,28 @@ public class GroupBuyingController {
     }
 
     /**
-     * 공동구매 상세 조회 (비회원도 가능)
+     * 공동구매 상세 조회 (조회수 증가 O)
      * GET /api/v1/group-buying/{postId}
      */
     @GetMapping("/{postId}")
     public ResponseEntity<GroupBuyingPostResponse> getPost(
             @PathVariable Long postId
     ) {
+        log.info("게시글 상세 조회 (조회수 증가): postId={}", postId);
         GroupBuyingPostResponse response = groupBuyingService.getPost(postId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 공동구매 정보 조회 (조회수 증가 X)
+     * GET /api/v1/group-buying/{postId}/info
+     */
+    @GetMapping("/{postId}/info")
+    public ResponseEntity<GroupBuyingPostResponse> getPostInfo(
+            @PathVariable Long postId
+    ) {
+        log.info("게시글 정보 조회 (조회수 증가 X): postId={}", postId);
+        GroupBuyingPostResponse response = groupBuyingService.getPostInfo(postId);
         return ResponseEntity.ok(response);
     }
 
