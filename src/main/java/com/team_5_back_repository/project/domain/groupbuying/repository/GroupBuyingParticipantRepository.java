@@ -36,7 +36,7 @@ public interface GroupBuyingParticipantRepository extends JpaRepository<GroupBuy
     @Query(
             value = """
         SELECT new com.team_5_back_repository.project.domain.member.dto.dto.GroupBuyDto(
-            gbp.chatRoomId,
+            gbp.id,
             cr.name,
             gbp.status,
             cr.currentParticipants,
