@@ -1,113 +1,120 @@
 spring:
-  profiles:
-    active: dev
-  output:
-    ansi:
-      enabled: always
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/onelife_db?useSSL=false&useUnicode=true&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
-    username: ${MYSQL_USER}
-    password: ${MYSQL_PASSWORD}
-  hikari:
-    auto-commit: false
+    profiles:
+        active: dev
+    output:
+        ansi:
+            enabled: always
+    datasource:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://localhost:3306/onelife_db?useSSL=false&useUnicode=true&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
+        username: ${MYSQL_USER}
+        password: ${MYSQL_PASSWORD}
+    hikari:
+        auto-commit: false
 
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
-        format_sql: true
-        highlight_sql: true
-        use_sql_comments: true
+    jpa:
+        hibernate:
+            ddl-auto: create
+        show-sql: true
+        properties:
+            hibernate:
+                dialect: org.hibernate.dialect.MySQLDialect
+                format_sql: true
+                highlight_sql: true
+                use_sql_comments: true
 
-  # Redis 설정 (채팅용)
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      password:  # 비밀번호 없으면 비워두기
-      timeout: 3000ms
-      lettuce:
-        pool:
-          max-active: 10
-          max-idle: 10
-          min-idle: 2
+    # Redis 설정 (채팅, 회원 이메일 인증)
+    data:
+        redis:
+            host: ${REDIS_HOST}
+            port: 6379
+            password: ${REDIS_PASSWORD}
+            timeout: 3000ms
+            lettuce:
+                pool:
+                    max-active: 10
+                    max-idle: 10
+                    min-idle: 2
 
-  config:
-    import: optional:file:.env[.properties]
+    config:
+        import: optional:file:.env[.properties]
+    servlet:
+        multipart:
+            enabled: true
+            max-file-size: 10MB
+            max-request-size: 10MB
 
-  h2:
-    console:
-      enabled: true
+    h2:
+        console:
+            enabled: true
 
-  jwt:
-    secret: ${JWT_SECRET}
-    expiration: ${JWT_EXPIRATION}
-  security:
-    oauth2:
-      client:
-        registration:
-          kakao:
-            client-id: ${OAUTH_KAKAO_CLIENT_ID}
-            scope: profile_nickname, profile_image
-            client-name: Kakao
-            authorization-grant-type: authorization_code
-            redirect-uri: '{baseUrl}/{action}/oauth2/code/{registrationId}'
-        provider:
-          kakao:
-            authorization-uri: https://kauth.kakao.com/oauth/authorize
-            token-uri: https://kauth.kakao.com/oauth/token
-            user-info-uri: https://kapi.kakao.com/v2/user/me
-            user-name-attribute: id
-  mail:
-    host: smtp.gmail.com  # Gmail의 SMTP 서버 호스트
-    port: 587 # Gmail SMTP 서버는 587번 포트를 사용
-    username: ${GMAIL_USERNAME} # Gmail 주소
-    password: ${GMAIL_SECRET}
-    properties:
-      mail:
-        smtp:
-          auth: true # SMTP 서버에 인증 필요한 경우 true로 지정 Gmail은 요구함
-          starttls:
-            enable: true # SMTP 서버가 TLS를 사용하여 안전한 연결을 요구하는 경우 true로 설정
-            required: true
-          connection-timeout: 5000 # 클라이언트가 SMTP 서버와의 연결을 설정하는 데 대기해야 하는 시간
-          timeout: 5000 # 클라이언트가 SMTP 서버로부터 응답을 대기해야 하는 시간
-          write-timeout: 5000 # 클라이언트가 작업을 완료하는데 대기해야 하는 시간
-    auth-code-expiration-millis: 1800000  # 30 * 60 * 1000 == 30분 이메일 인증 코드의 만료 시간(Millisecond)
+    jwt:
+        secret: ${JWT_SECRET}
+        expiration: ${JWT_EXPIRATION}
+    security:
+        oauth2:
+            client:
+                registration:
+                    kakao:
+                        client-id: ${OAUTH_KAKAO_CLIENT_ID}
+                        scope: profile_nickname, profile_image
+                        client-name: Kakao
+                        authorization-grant-type: authorization_code
+                        redirect-uri: '{baseUrl}/{action}/oauth2/code/{registrationId}'
+                provider:
+                    kakao:
+                        authorization-uri: https://kauth.kakao.com/oauth/authorize
+                        token-uri: https://kauth.kakao.com/oauth/token
+                        user-info-uri: https://kapi.kakao.com/v2/user/me
+                        user-name-attribute: id
+    mail:
+        host: smtp.gmail.com # Gmail의 SMTP 서버 호스트
+        port: 587 # Gmail SMTP 서버는 587번 포트를 사용
+        username: ${GMAIL_USERNAME} # Gmail 주소
+        password: ${GMAIL_SECRET}
+        properties:
+            mail:
+                smtp:
+                    auth: true # SMTP 서버에 인증 필요한 경우 true로 지정 Gmail은 요구함
+                    starttls:
+                        enable: true # SMTP 서버가 TLS를 사용하여 안전한 연결을 요구하는 경우 true로 설정
+                        required: true
+                    connection-timeout: 5000 # 클라이언트가 SMTP 서버와의 연결을 설정하는 데 대기해야 하는 시간
+                    timeout: 5000 # 클라이언트가 SMTP 서버로부터 응답을 대기해야 하는 시간
+                    write-timeout: 5000 # 클라이언트가 작업을 완료하는데 대기해야 하는 시간
+        auth-code-expiration-millis: 1800000 # 30 * 60 * 1000 == 30분 이메일 인증 코드의 만료 시간(Millisecond)
 
 server:
-  forward-headers-strategy: native
+    forward-headers-strategy: native
+    port: 8080
+    address: 0.0.0.0
 
 springdoc:
-  api-docs:
-    groups:
-      enabled: true
-  default-produces-media-type: application/json;charset=UTF-8
-  cache:
-    disabled: true
-  swagger-ui:
-    enabled: true
-    tags-sorter: alpha
-    operations-sorter: alpha
+    api-docs:
+        groups:
+            enabled: true
+    default-produces-media-type: application/json;charset=UTF-8
+    cache:
+        disabled: true
+    swagger-ui:
+        enabled: true
+        tags-sorter: alpha
+        operations-sorter: alpha
 
 openai:
-  api-key: ${OPENAI_API_KEY}
-  model: gpt-4o-mini
+    api-key: ${OPENAI_API_KEY}
+    model: gpt-4o-mini
 
 region:
-  secret-key: ${REGION_API_KEY}
+    secret-key: ${REGION_API_KEY}
 
 cloud:
-  aws:
-    s3:
-      bucket-name: ${AWS_S3_BUCKET_NAME}
-    credentials:
-        access-key: ${AWS_ACCESS_KEY}
-        secret-key: ${AWS_SECRET_KEY}
-    region: ${AWS_REGION}
-    stack:
-        auto: false
+    aws:
+        s3:
+            bucket-name: ${AWS_S3_BUCKET_NAME}
+        credentials:
+            access-key: ${AWS_ACCESS_KEY}
+            secret-key: ${AWS_SECRET_KEY}
+        region: ${AWS_REGION}
+        stack:
+            auto: false

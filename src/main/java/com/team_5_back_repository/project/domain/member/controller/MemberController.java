@@ -15,6 +15,7 @@ import com.team_5_back_repository.project.global.security.Rq.Rq;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -47,7 +48,7 @@ public class MemberController {
     @Transactional(readOnly = true)
     @GetMapping("/check-nickname")
     @Operation(summary = "닉네임 중복 확인", description = "닉네임이 이미 사용 중인지 확인합니다.")
-    public RsData<Boolean> checkNickname(@RequestParam String nickname) {
+    public RsData<Boolean> checkNickname(@RequestParam @Size(min = 2, max = 10)String nickname) {
         boolean isAvailable = memberService.isNicknameAvailable(nickname);
         if (isAvailable) {
             return new RsData<>("200-1", "사용 가능한 닉네임입니다.", true);

@@ -5,11 +5,15 @@ import com.team_5_back_repository.project.domain.comment.dto.CommentRequest;
 import com.team_5_back_repository.project.domain.comment.dto.CommentResponse;
 import com.team_5_back_repository.project.domain.comment.entity.Comment;
 import com.team_5_back_repository.project.domain.comment.repository.CommentRepository;
+import com.team_5_back_repository.project.domain.member.dto.dto.CommentDto;
 import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.member.repository.MemberRepository;
 import com.team_5_back_repository.project.domain.post.entity.Post;
 import com.team_5_back_repository.project.domain.post.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,6 +83,16 @@ public class CommentService {
         }
 
         comment.softDelete();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CommentDto> getCommentByMember(Member member, Pageable pageable) {
+        return commentRepository.findByMemberAndDeletedFalse(member, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Long countCommentByMember(Member member) {
+        return commentRepository.countByMemberAndDeletedFalse(member);
     }
 
 }

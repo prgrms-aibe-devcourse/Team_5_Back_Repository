@@ -1,7 +1,9 @@
 package com.team_5_back_repository.project.domain.post.service;
 
+
 import com.team_5_back_repository.project.domain.bookmark.entity.BookmarkType;
 import com.team_5_back_repository.project.domain.bookmark.repository.BookmarkRepository;
+import com.team_5_back_repository.project.domain.member.dto.dto.PostDto;
 import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.member.repository.MemberRepository;
 import com.team_5_back_repository.project.domain.post.dto.PostRequest;
@@ -246,5 +248,17 @@ public class PostService {
     public void increaseView(Long id) {
         int updated = postRepository.incrementViewCount(id);
         if (updated == 0) throw new RuntimeException("게시글 없음 (id=" + id + ")");
+    }
+
+    public Page<PostDto> getPostsByMember(Member member, Pageable pageable, PostType postType) {
+        Page<PostDto> posts;
+        if(postType == PostType.ALL) {
+            posts = postRepository.findPostByMember(member, pageable);
+        } else {
+            posts = postRepository.findPostByMemberAndType(member, postType, pageable);
+        }
+        System.out.println("타입 : " + postType);
+        return posts;
+
     }
 }

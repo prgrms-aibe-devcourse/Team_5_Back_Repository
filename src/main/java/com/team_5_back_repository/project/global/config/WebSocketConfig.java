@@ -46,53 +46,55 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("http://localhost:3000")  // Next.js 개발 서버
-                .withSockJS();  // SockJS 폴백 활성화
+                .setAllowedOriginPatterns(
+                        "http://localhost:3000",
+                        "https://resreqonelifefront.vercel.app",
+                        "https://onelife.mwan.site")
+                .withSockJS();
     }
 
     /**
-     * 클라이언트 인바운드 채널 설정 (인증 처리)
-     * CONNECT 시점에 사용자 인증 및 세션 저장
+     * JWT 토큰 기반 인증 인터셉터
+     * CONNECT 시점에 JWT 토큰 검증 후 세션에 사용자 정보 저장
      */
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(new ChannelInterceptor() {
             @Override
             public Message<?> preSend(Message<?> message, MessageChannel channel) {
-                StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+                StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(
+                        message, StompHeaderAccessor.class);
 
-                if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-                    // CONNECT 시 헤더에서 사용자 정보 추출
-                    String userId = accessor.getFirstNativeHeader("userId");
-                    String nickname = accessor.getFirstNativeHeader("nickname");
-                    String accessToken = accessor.getFirstNativeHeader("accessToken");
+                if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
+                    String authHeader = accessor.getFirstNativeHeader("Authorization");
 
-                    if (userId != null && nickname != null) {
+                    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                        log.error("❌ WebSocket 연결 거부: Authorization 헤더 없음");
+                        throw new IllegalStateException("인증 토큰이 필요합니다.");
+                    }
+
+                    try {
+                        String token = authHeader.substring(7); // "Bearer " 제거
+                        Map<String, Object> payload = memberService.payload(token);
+
+                        if (payload == null) {
+                            log.error("❌ WebSocket 연결 거부: 유효하지 않은 토큰");
+                            throw new IllegalStateException("유효하지 않은 토큰입니다.");
+                        }
+
+                        // JWT에서 추출한 정보만 사용 (클라이언트가 임의로 보낸 값 무시)
+                        Long userId = ((Number) payload.get("id")).longValue();
+                        String nickname = (String) payload.get("nickname");
+
                         // 세션에 저장
                         accessor.getSessionAttributes().put("userId", userId);
                         accessor.getSessionAttributes().put("nickname", nickname);
 
-                        log.info("✅ WebSocket 사용자 인증: userId={}, nickname={}", userId, nickname);
+                        log.info("✅ WebSocket 연결 인증 성공: userId={}, nickname={}", userId, nickname);
 
-                        // JWT 토큰 검증 (선택 사항)
-                        if (accessToken != null) {
-                            try {
-                                Map<String, Object> payload = memberService.payload(accessToken);
-                                if (payload != null) {
-                                    long tokenUserId = ((Number) payload.get("id")).longValue();
-                                    if (tokenUserId != Long.parseLong(userId)) {
-                                        throw new IllegalStateException("토큰의 사용자 ID가 일치하지 않습니다.");
-                                    }
-                                    log.info("✅ JWT 토큰 검증 성공: userId={}", tokenUserId);
-                                }
-                            } catch (Exception e) {
-                                log.warn("⚠️ JWT 토큰 검증 실패: {}", e.getMessage());
-                                // 필요시 연결 거부
-                                // throw new IllegalStateException("유효하지 않은 토큰입니다.");
-                            }
-                        }
-                    } else {
-                        log.warn("⚠️ WebSocket 연결 시 userId 또는 nickname 헤더가 없음");
+                    } catch (Exception e) {
+                        log.error("❌ WebSocket 인증 실패: {}", e.getMessage());
+                        throw new IllegalStateException("인증에 실패했습니다: " + e.getMessage());
                     }
                 }
 

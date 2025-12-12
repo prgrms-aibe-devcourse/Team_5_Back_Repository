@@ -49,6 +49,7 @@ public class ChatRoomController {
 
     /**
      * 채팅방 목록 조회 (비회원도 가능)
+     * 공동구매 채팅방은 제외 (소모임만 표시)
      * GET /api/v1/chatrooms?region=강남구&type=SMALL_GROUP
      */
     @GetMapping
@@ -56,7 +57,18 @@ public class ChatRoomController {
             @RequestParam(required = false) String region,
             @RequestParam(required = false) ChatRoomType type
     ) {
-        ChatRoomListResponse response = chatRoomService.getChatRooms(region, type);
+        // type이 null이면 소모임만 조회 (GROUP_PURCHASE 제외)
+        ChatRoomType filterType = type != null ? type : ChatRoomType.SMALL_GROUP;
+
+        // GROUP_PURCHASE는 소모임 목록에서 제외
+        if (filterType == ChatRoomType.GROUP_PURCHASE) {
+            return ResponseEntity.ok(ChatRoomListResponse.builder()
+                    .chatRooms(List.of())
+                    .totalCount(0)
+                    .build());
+        }
+
+        ChatRoomListResponse response = chatRoomService.getChatRooms(region, filterType);
         return ResponseEntity.ok(response);
     }
 
@@ -88,7 +100,7 @@ public class ChatRoomController {
     }
 
     /**
-     * 채팅방 참여 (로그인 필수)
+     * 채팅방 참여 (로그인 필수) - 입장 메시지 포함
      * POST /api/v1/chatrooms/{chatRoomId}/join
      */
     @PostMapping("/{chatRoomId}/join")
@@ -100,16 +112,14 @@ public class ChatRoomController {
             throw new IllegalStateException("로그인이 필요합니다.");
         }
 
-        chatRoomService.joinChatRoom(chatRoomId, actor.getId());
-
-        // 입장 메시지 자동 생성
-        chatMessageService.createEnterMessage(chatRoomId, actor.getId(), actor.getNickname());
+        // 참여 + 입장 메시지 (트랜잭션 통합)
+        chatRoomService.joinChatRoomWithMessage(chatRoomId, actor.getId(), actor.getNickname());
 
         return ResponseEntity.ok().build();
     }
 
     /**
-     * 채팅방 나가기 (로그인 필수) - 순서 변경
+     * 채팅방 나가기 (로그인 필수) - 퇴장 메시지 포함
      * POST /api/v1/chatrooms/{chatRoomId}/leave
      */
     @PostMapping("/{chatRoomId}/leave")
@@ -122,12 +132,8 @@ public class ChatRoomController {
         }
 
         try {
-            // 1. 먼저 실제 퇴장 처리 (방장 권한 이양 포함)
-            chatRoomService.leaveChatRoom(chatRoomId, actor.getId());
-
-            // 2. 그 다음 퇴장 메시지 생성 및 WebSocket 브로드캐스트
-            //    이 시점에는 이미 방장 권한이 이양된 상태
-            chatMessageService.createLeaveMessage(chatRoomId, actor.getId(), actor.getNickname());
+            // 나가기 + 퇴장 메시지 (트랜잭션 통합)
+            chatRoomService.leaveChatRoomWithMessage(chatRoomId, actor.getId(), actor.getNickname());
 
             return ResponseEntity.ok().build();
 
@@ -158,7 +164,7 @@ public class ChatRoomController {
     }
 
     /**
-     * 채팅방 최근 메시지 조회 (로그인 필수)
+     * 채팅방 최근 메시지 조회 (비회원도 접근 가능, 비회원은 빈 목록)
      * GET /api/v1/chatrooms/{chatRoomId}/messages/recent?count=50
      */
     @GetMapping("/{chatRoomId}/messages/recent")
@@ -167,8 +173,10 @@ public class ChatRoomController {
             @RequestParam(defaultValue = "50") int count
     ) {
         Member actor = rq.getActor();
+
+        // 비회원이면 빈 목록 반환 (에러 없이)
         if (actor == null) {
-            throw new IllegalStateException("로그인이 필요합니다.");
+            return ResponseEntity.ok(List.of());
         }
 
         List<ChatMessageResponse> messages = chatMessageService.getRecentMessages(chatRoomId, count);
@@ -176,7 +184,7 @@ public class ChatRoomController {
     }
 
     /**
-     * 채팅방 참여자 목록 조회 (로그인 필수)
+     * 채팅방 참여자 목록 조회 (비회원도 접근 가능, 비회원은 빈 목록)
      * GET /api/v1/chatrooms/{chatRoomId}/participants
      */
     @GetMapping("/{chatRoomId}/participants")
@@ -184,8 +192,10 @@ public class ChatRoomController {
             @PathVariable Long chatRoomId
     ) {
         Member actor = rq.getActor();
+
+        // 비회원이면 빈 목록 반환 (에러 없이)
         if (actor == null) {
-            throw new IllegalStateException("로그인이 필요합니다.");
+            return ResponseEntity.ok(List.of());
         }
 
         List<ChatParticipant> participants = chatRoomService.getChatRoomParticipants(chatRoomId);
@@ -197,5 +207,60 @@ public class ChatRoomController {
         log.info("채팅방 참여자 목록 조회: chatRoomId={}, 참여자 수={}", chatRoomId, responses.size());
 
         return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * 참여자 강퇴 (방장만 가능)
+     * POST /api/v1/chatrooms/{chatRoomId}/kick/{targetMemberId}
+     */
+    @PostMapping("/{chatRoomId}/kick/{targetMemberId}")
+    public ResponseEntity<Void> kickParticipant(
+            @PathVariable Long chatRoomId,
+            @PathVariable Long targetMemberId
+    ) {
+        Member actor = rq.getActor();
+        if (actor == null) {
+            throw new IllegalStateException("로그인이 필요합니다.");
+        }
+
+        try {
+            // 강퇴 처리 (메시지 생성 포함)
+            chatRoomService.kickParticipant(chatRoomId, actor.getId(), targetMemberId);
+
+            log.info("✅ 참여자 강퇴 완료: chatRoomId={}, kickedBy={}, targetMemberId={}",
+                    chatRoomId, actor.getId(), targetMemberId);
+
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.error("❌ 참여자 강퇴 실패: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * 방장 권한 이양 (방장만 가능)
+     * POST /api/v1/chatrooms/{chatRoomId}/transfer/{targetMemberId}
+     */
+    @PostMapping("/{chatRoomId}/transfer/{targetMemberId}")
+    public ResponseEntity<Void> transferCreator(
+            @PathVariable Long chatRoomId,
+            @PathVariable Long targetMemberId
+    ) {
+        Member actor = rq.getActor();
+        if (actor == null) {
+            throw new IllegalStateException("로그인이 필요합니다.");
+        }
+
+        try {
+            chatRoomService.transferCreator(chatRoomId, actor.getId(), targetMemberId);
+
+            log.info("✅ 방장 권한 이양 완료: chatRoomId={}, from={}, to={}",
+                    chatRoomId, actor.getId(), targetMemberId);
+
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.error("❌ 방장 권한 이양 실패: {}", e.getMessage());
+            throw e;
+        }
     }
 }
