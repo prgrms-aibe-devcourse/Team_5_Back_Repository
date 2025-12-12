@@ -30,7 +30,7 @@ public class LikeService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new RuntimeException("회원 없음"));
 
-        Optional<PostLike> optional = likeRepository.findByMgemberIdAndPostId(memberId, postId);
+        Optional<PostLike> optional = likeRepository.findByMemberIdAndPostId(memberId, postId);
 
         if (optional.isEmpty()) {
             PostLike reaction = PostLike.builder()

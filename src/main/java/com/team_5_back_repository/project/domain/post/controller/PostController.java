@@ -14,8 +14,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 
 @RestController
@@ -26,15 +30,17 @@ public class PostController {
 
     private final PostService postService;
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "게시글 작성",
             description = "새로운 게시글 생성 (팁 게시판은 관리자 only)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "작성 성공")
     })
-    public ResponseEntity<RsData<Long>> createPost(@Valid @RequestBody PostRequest request) {
+    public ResponseEntity<RsData<Long>> createPost(
+            @Valid @ModelAttribute PostRequest request,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files) {
         Long memberId = SecurityUtil.getCurrentUserId();
-        Long id = postService.createPost(request,  memberId);
+        Long id = postService.createPost(request,files, memberId);
         return ResponseEntity.ok( new RsData<>("200-1", "게시글 작성 성공", id));
     }
 
@@ -42,11 +48,10 @@ public class PostController {
     @Operation( summary = "게시글 조회",
             description = "ID로 게시글 조회")
     public ResponseEntity<RsData<PostResponse>> getPost(
-            @PathVariable Long id,
-            @RequestParam(defaultValue = "true") boolean increaseView
+            @PathVariable Long id
     ) {
         Long memberId = SecurityUtil.getCurrentUserId();
-        PostResponse response = postService.getPost(id, increaseView, memberId);
+        PostResponse response = postService.getPost(id, memberId);
         return ResponseEntity.ok( new RsData<>("200-1", "조회 성공", response));
     }
 
@@ -68,14 +73,16 @@ public class PostController {
         return ResponseEntity.ok(new RsData<>("200-1", "목록 조회 성공", response));
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}" , consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation( summary = "게시글 수정",
             description = "작성자만 게시글 수정")
     public ResponseEntity<RsData<PostResponse>> updatePost(
             @PathVariable Long id,
-            @Valid @RequestBody PostRequest request
+            @Valid @ModelAttribute  PostRequest request,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files
     ) {
         Long memberId = SecurityUtil.getCurrentUserId();
+        request.setFiles(files);
         return ResponseEntity.ok(
                 new RsData<>("200-1", "수정 성공",postService.updatePost(id, request, memberId))
         );
@@ -88,5 +95,11 @@ public class PostController {
         Long userId = SecurityUtil.getCurrentUserId();
         postService.deletePost(postId, userId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/view")
+    public ResponseEntity<RsData<Void>> increaseView(@PathVariable Long id) {
+        postService.increaseView(id);
+        return ResponseEntity.ok(new RsData<>("200-1", "조회수 증가", null));
     }
 }

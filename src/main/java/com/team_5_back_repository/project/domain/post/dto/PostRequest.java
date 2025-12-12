@@ -4,7 +4,9 @@ import com.team_5_back_repository.project.domain.post.entity.PostType;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -14,7 +16,8 @@ public class PostRequest {
     private String title;
     @NotBlank
     private String content;
-    private String attachmentPath;
     private PostType postType;
     private Set<String> tags;
+    private List<MultipartFile> files;
+    private List<String> remainFileUrls;
 }
