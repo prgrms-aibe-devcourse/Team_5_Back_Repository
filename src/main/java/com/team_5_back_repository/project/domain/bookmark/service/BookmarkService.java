@@ -4,11 +4,14 @@ import com.team_5_back_repository.project.domain.bookmark.dto.BookmarkResponse;
 import com.team_5_back_repository.project.domain.bookmark.entity.Bookmark;
 import com.team_5_back_repository.project.domain.bookmark.entity.BookmarkType;
 import com.team_5_back_repository.project.domain.bookmark.repository.BookmarkRepository;
+import com.team_5_back_repository.project.domain.member.dto.dto.BookmarkDto;
 import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.member.repository.MemberRepository;
 import com.team_5_back_repository.project.domain.post.entity.Post;
 import com.team_5_back_repository.project.domain.post.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,5 +52,13 @@ public class BookmarkService {
                 .orElseThrow(() -> new RuntimeException("북마크가 존재하지 않음"));
 
         bookmarkRepository.delete(bookmark);
+    }
+
+    public Page<BookmarkDto> getBookmarksByMember(Member member, Pageable pageable) {
+        return bookmarkRepository.findBookmarksByMember(member, pageable);
+    }
+
+    public Long countBookmarksByMember(Member member) {
+        return bookmarkRepository.countByMember(member);
     }
 }

@@ -1,5 +1,6 @@
 package com.team_5_back_repository.project.domain.member.controller;
 
+import com.team_5_back_repository.project.domain.bookmark.service.BookmarkService;
 import com.team_5_back_repository.project.domain.chatroom.service.ChatRoomService;
 import com.team_5_back_repository.project.domain.comment.entity.Comment;
 import com.team_5_back_repository.project.domain.comment.service.CommentService;
@@ -38,6 +39,7 @@ public class MyPageController {
     private final PostService postService;
     private final ChatRoomService chatRoomService;
     private final GroupBuyingService groupBuyingService;
+    private final BookmarkService bookmarkService;
     private final Rq rq;
 
     private Member getMember() {
@@ -82,8 +84,6 @@ public class MyPageController {
         return commentService.getCommentByMember(getMember(), pageable);
     }
 
-    //TODO 북마크
-
     @Transactional(readOnly = true)
     @GetMapping("/posts")
     @Operation(summary = "내가 작성한 게시글 조회", description = "회원이 자신이 작성한 게시글을 조회합니다.")
@@ -111,4 +111,14 @@ public class MyPageController {
         Pageable pageable = PageRequest.of(page, size);
         return groupBuyingService.getParticipatingGroupBuys(getMember(), pageable);
     }
+
+    @Transactional
+    @GetMapping("/bookmark")
+    @Operation(summary = "내가 북마크한 게시글 조회", description = "회원이 자신이 북마크한 게시글을 조회합니다.")
+    public Page<BookmarkDto> getBookmarksByMember(@RequestParam(defaultValue = "0") int page,
+                                                  @RequestParam(defaultValue = "5") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return bookmarkService.getBookmarksByMember(getMember(), pageable);
+    }
+
 }
