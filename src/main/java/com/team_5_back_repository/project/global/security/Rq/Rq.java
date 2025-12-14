@@ -74,9 +74,9 @@ public class Rq {
         // cookie.setDomain("localhost"); // 쿠키가 적용될 도메인 지정
         // cookie.setSecure(false); // http에서도 작동 (https일 때는 true) TODO 배포 시 true로 변경 필요
         // cookie.setAttribute("SameSite", "Strict"); // 크로스 사이트 요청 위조 방지
-        cookie.setDomain("localhost"); // 쿠키가 적용될 도메인 지정
-        cookie.setSecure(false); // http에서도 작동 (https일 때는 true) TODO 배포 시 true로 변경 필요
-        cookie.setAttribute("SameSite", "Lax"); // 크로스 사이트 요청 위조 방지
+        cookie.setDomain("onelife.mwan.site"); // 쿠키가 적용될 도메인 지정
+        cookie.setSecure(true); // http에서도 작동 (https일 때는 true) TODO 배포 시 true로 변경 필요
+        cookie.setAttribute("SameSite", "None"); // 크로스 사이트 요청 위조 방지
 
         if (value.isBlank()) {
             cookie.setMaxAge(0);
