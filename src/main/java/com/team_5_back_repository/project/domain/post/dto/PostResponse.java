@@ -9,7 +9,6 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,29 +36,6 @@ public class PostResponse {
     private boolean isAdmin;
     private boolean isBookmarked;
 
-    public PostResponse(
-            Long id,
-            String title,
-            String content,
-            Long viewCount,
-            int likeCount,
-            int dislikeCount,
-            long commentCount,
-            LocalDateTime createdAt,
-            LocalDateTime updatedAt,
-            boolean isHot
-    ) {
-        this.id = id;
-        this.title = title;
-        this.content = content;
-        this.viewCount = viewCount;
-        this.likeCount = likeCount;
-        this.dislikeCount = dislikeCount;
-        this.commentCount = commentCount;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.isHot = isHot;
-    }
 
     public static PostResponse from(
             Post post,

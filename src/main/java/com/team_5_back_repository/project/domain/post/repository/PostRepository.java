@@ -2,7 +2,6 @@ package com.team_5_back_repository.project.domain.post.repository;
 
 import com.team_5_back_repository.project.domain.member.dto.dto.PostDto;
 import com.team_5_back_repository.project.domain.member.entity.Member;
-import com.team_5_back_repository.project.domain.post.dto.PostResponse;
 import com.team_5_back_repository.project.domain.post.entity.Post;
 import com.team_5_back_repository.project.domain.post.entity.PostType;
 import org.springframework.data.domain.Page;
@@ -20,53 +19,11 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // 멤버 별 게시글 수
     long countByMember(Member member);
 
-    /* ==============================
-     * 🔥 게시글 목록 (댓글 수 포함)
-     * ============================== */
-
     @Query("""
-    SELECT new com.team_5_back_repository.project.domain.post.dto.PostResponse(
-        p.id,
-        p.title,
-        p.content,
-        p.viewCount,
-        p.likeCount,
-        p.dislikeCount,
-        COUNT(c),
-        p.createdAt,
-        p.updatedAt,
-        p.isHot
-    )
-    FROM Post p
-    LEFT JOIN Comment c
-        ON c.post = p AND c.deleted = false
-    GROUP BY p
-    """)
-    Page<PostResponse> findAllWithCommentCount(Pageable pageable);
-
-    @Query("""
-    SELECT new com.team_5_back_repository.project.domain.post.dto.PostResponse(
-        p.id,
-        p.title,
-        p.content,
-        p.viewCount,
-        p.likeCount,
-        p.dislikeCount,
-        COUNT(c),
-        p.createdAt,
-        p.updatedAt,
-        p.isHot
-    )
-    FROM Post p
-    LEFT JOIN Comment c
-        ON c.post = p AND c.deleted = false
+    SELECT p FROM Post p
     WHERE p.postType = :postType
-    GROUP BY p
-    """)
-    Page<PostResponse> findByPostTypeWithCommentCount(
-            @Param("postType") PostType postType,
-            Pageable pageable
-    );
+""")
+    Page<Post> findByPostType(Pageable pageable, @Param("postType") PostType postType);
 
     @Query("""
     SELECT new com.team_5_back_repository.project.domain.member.dto.dto.PostDto(
@@ -111,4 +68,29 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("member") Member member,
             Pageable pageable
     );
+    Page<Post> findByIsHotTrue(Pageable pageable);
+
+    @Query("""
+    SELECT p FROM Post p
+    WHERE p.postType = :type
+    AND (:keyword IS NULL OR p.title LIKE %:keyword% OR p.content LIKE %:keyword%)
+    """)
+    Page<Post> searchByType(
+            @Param("type") PostType type,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
+
+    @Query("""
+    SELECT p FROM Post p
+    WHERE (:keyword IS NULL OR p.title LIKE %:keyword% OR p.content LIKE %:keyword%)
+    """)
+    Page<Post> searchAll(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("""
+    SELECT p FROM Post p
+    WHERE p.isHot = true
+    AND (:keyword IS NULL OR p.title LIKE %:keyword% OR p.content LIKE %:keyword%)
+    """)
+    Page<Post> searchHot(@Param("keyword") String keyword, Pageable pageable);
 }
