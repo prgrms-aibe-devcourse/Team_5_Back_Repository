@@ -1,5 +1,6 @@
 package com.team_5_back_repository.project.domain.member.service;
 
+import com.team_5_back_repository.project.domain.bookmark.service.BookmarkService;
 import com.team_5_back_repository.project.domain.comment.entity.Comment;
 import com.team_5_back_repository.project.domain.comment.service.CommentService;
 import com.team_5_back_repository.project.domain.member.dto.dto.*;
@@ -36,6 +37,7 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
     private final PostService postService;
     private final CommentService commentService;
+    private final BookmarkService bookmarkService;
     private final StorageService storageService;
     public long countMembers() {
         return memberRepository.count();
@@ -196,10 +198,8 @@ public class MemberService {
         String profileImgUrl = member.getProfileImage() != null ? member.getProfileImage().getImgUrl() : null;
 
         Long postCount = postService.countPostsByMember(member);
-        Long commentCount = commentService.countCommentByMember(member); // TODO 댓글, 좋아요, 팔로워, 팔로잉 추후 구현 필요
-        Long likeCount = 0L; // 추후 구현 필요
-        Long followerCount = 0L; // 추후 구현 필요
-        Long followingCount = 0L; // 추후 구현 필요
+        Long commentCount = commentService.countCommentByMember(member);
+        Long bookmarkCount = bookmarkService.countBookmarksByMember(member);
 
         return MyPageDto.builder()
                 .nickname(member.getNickname())
@@ -207,7 +207,7 @@ public class MemberService {
                 .introduction(member.getIntroduction())
                 .avatar(profileImgUrl)
                 .joinDate(member.getCreatedAt().toString())
-                .stats(new MemberStatDto(postCount, commentCount, likeCount, followerCount, followingCount))
+                .stats(new MemberStatDto(postCount, commentCount, bookmarkCount))
                 .build();
     }
 

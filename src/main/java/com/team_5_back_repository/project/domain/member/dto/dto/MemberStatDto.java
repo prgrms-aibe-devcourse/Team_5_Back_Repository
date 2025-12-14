@@ -10,6 +10,4 @@ public class MemberStatDto {
     private Long postCount;
     private Long commentCount;
     private Long bookmarkCount;
-    private Long followingCount;
-    private Long followerCount;
 }

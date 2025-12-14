@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Builder
@@ -32,6 +33,10 @@ public class GroupBuyingPostResponse {
     private LocalDateTime updatedAt;
     private Integer progressPercentage;
     private Boolean isExpired;
+    private Long viewCount;
+    private Long chatRoomMessageCount;
+    private List<String> images;
+    private String creatorNickname;
 
     public static GroupBuyingPostResponse from(GroupBuyingPost post) {
         int progressPercentage = 0;
@@ -57,6 +62,18 @@ public class GroupBuyingPostResponse {
                 .updatedAt(post.getUpdatedAt())
                 .progressPercentage(progressPercentage)
                 .isExpired(post.isExpired())
+                .viewCount(post.getViewCount() != null ? post.getViewCount() : 0L)
+                .images(post.getImageList())
+                .chatRoomMessageCount(0L)
+                .creatorNickname(null)
                 .build();
+    }
+
+    public void setChatRoomMessageCount(Long count) {
+        this.chatRoomMessageCount = count;
+    }
+
+    public void setCreatorNickname(String nickname) {
+        this.creatorNickname = nickname;
     }
 }

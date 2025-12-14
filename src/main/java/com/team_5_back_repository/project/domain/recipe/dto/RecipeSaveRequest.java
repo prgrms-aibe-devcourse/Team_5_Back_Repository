@@ -19,4 +19,6 @@ public class RecipeSaveRequest {
 
     private List<String> ingredients;
     private List<String> steps;
+
+    private String youtubeUrl;
 }
