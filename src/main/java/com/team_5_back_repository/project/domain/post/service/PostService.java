@@ -3,6 +3,7 @@ package com.team_5_back_repository.project.domain.post.service;
 
 import com.team_5_back_repository.project.domain.bookmark.entity.BookmarkType;
 import com.team_5_back_repository.project.domain.bookmark.repository.BookmarkRepository;
+import com.team_5_back_repository.project.domain.comment.repository.CommentRepository;
 import com.team_5_back_repository.project.domain.member.dto.dto.PostDto;
 import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.member.repository.MemberRepository;
@@ -18,6 +19,7 @@ import com.team_5_back_repository.project.global.cloudstorage.entity.FileEntity;
 import com.team_5_back_repository.project.global.cloudstorage.repository.FileEntityRepository;
 import com.team_5_back_repository.project.global.cloudstorage.service.StorageService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -39,6 +41,7 @@ public class PostService {
     private final StorageService storageService;
     private final FileEntityRepository fileEntityRepository;
     private final BookmarkRepository bookmarkRepository;
+    private final CommentRepository commentRepository;
 
     public Long createPost(PostRequest request, List<MultipartFile> files, Long memberId) {
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new RuntimeException("사용자 없음"));
@@ -88,12 +91,14 @@ public class PostService {
                     post.getId()
             );
         }
+        long commentCount = commentRepository.countByPostId(post.getId());
 
-        return PostResponse.from(post, currentMemberId, isAdmin,isBookmarked);
+
+        return PostResponse.from(post, currentMemberId, isAdmin,isBookmarked,commentCount);
     }
     @Transactional(readOnly = true)
     public Page<PostResponse> listPosts(PostType postType, Pageable pageable) {
-        Page<Post> posts = postRepository.findByPostType(postType, pageable);
+        Page<PostResponse> posts = postRepository.findByPostTypeWithCommentCount(postType, pageable);
 
         Long currentMemberId = SecurityUtil.getCurrentUserId();
         boolean isAdmin = SecurityUtil.isAdmin();
@@ -117,7 +122,25 @@ public class PostService {
                         );
             }
 
-            return PostResponse.from(post, currentMemberId, isAdmin, isBookmarked);
+            return PostResponse.builder()
+                    .id(post.getId())
+                    .title(post.getTitle())
+                    .content(post.getContent())
+                    .viewCount(post.getViewCount())
+                    .likeCount(post.getLikeCount())
+                    .dislikeCount(post.getDislikeCount())
+                    .commentCount(post.getCommentCount())
+                    .createdAt(post.getCreatedAt())
+                    .updatedAt(post.getUpdatedAt())
+                    .isHot(post.isHot())
+                    .isAuthor(
+                            currentMemberId != null &&
+                                    post.getMemberId() != null &&
+                                    post.getMemberId().equals(currentMemberId)
+                    )
+                    .isAdmin(isAdmin)
+                    .isBookmarked(isBookmarked)
+                    .build();
         });
     }
 
@@ -145,8 +168,8 @@ public class PostService {
                                 post.getId()
                         );
             }
-
-            return PostResponse.from(post, currentMemberId, isAdmin, isBookmarked);
+            long commentCount = commentRepository.countByPostId(post.getId());
+            return PostResponse.from(post, currentMemberId, isAdmin, isBookmarked,commentCount);
         });
     }
     public PostResponse updatePost(Long id, PostRequest request, Long memberId) {
@@ -201,7 +224,8 @@ public class PostService {
                             post.getId()
                     );
         }
-        return PostResponse.from(post, currentMemberId, isAdmin, isBookmarked);
+        long commentCount = commentRepository.countByPostId(post.getId());
+        return PostResponse.from(post, currentMemberId, isAdmin, isBookmarked,commentCount);
     }
 
     @Transactional

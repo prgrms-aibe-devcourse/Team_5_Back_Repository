@@ -29,6 +29,7 @@ public class PostResponse {
     private Long viewCount;
     private int likeCount;
     private int dislikeCount;
+    private long commentCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean isHot;
@@ -36,10 +37,38 @@ public class PostResponse {
     private boolean isAdmin;
     private boolean isBookmarked;
 
-    public static PostResponse from(Post post, Long currentMemberId, boolean isAdmin, boolean isBookmarked) {
-        List<String> urls =  post.getAttachmentPath() == null
-                ? new ArrayList<>()
-                : post.getAttachmentPath()
+    public PostResponse(
+            Long id,
+            String title,
+            String content,
+            Long viewCount,
+            int likeCount,
+            int dislikeCount,
+            long commentCount,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt,
+            boolean isHot
+    ) {
+        this.id = id;
+        this.title = title;
+        this.content = content;
+        this.viewCount = viewCount;
+        this.likeCount = likeCount;
+        this.dislikeCount = dislikeCount;
+        this.commentCount = commentCount;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.isHot = isHot;
+    }
+
+    public static PostResponse from(
+            Post post,
+            Long currentMemberId,
+            boolean isAdmin,
+            boolean isBookmarked,
+            long commentCount
+    ) {
+        List<String> urls = post.getAttachmentPath()
                 .stream()
                 .map(FileEntity::getImgUrl)
                 .toList();
@@ -48,6 +77,7 @@ public class PostResponse {
                 .id(post.getId())
                 .title(post.getTitle())
                 .content(post.getContent())
+                .imageUrls(urls)
                 .memberNickname(post.getMember().getNickname())
                 .memberId(post.getMember().getId())
                 .postType(post.getPostType())
@@ -55,12 +85,12 @@ public class PostResponse {
                 .viewCount(post.getViewCount())
                 .likeCount(post.getLikeCount())
                 .dislikeCount(post.getDislikeCount())
+                .commentCount(commentCount)
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
-                .imageUrls(urls)
+                .isHot(post.isHot())
                 .isAuthor(post.getMember().getId().equals(currentMemberId))
                 .isAdmin(isAdmin)
-                .isHot(post.isHot())
                 .isBookmarked(isBookmarked)
                 .build();
     }

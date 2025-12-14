@@ -31,6 +31,14 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             @Param("member") Member member,
             Pageable pageable
     );
+    @Query("""
+        SELECT COUNT(c)
+        FROM Comment c
+        WHERE c.post.id = :postId
+        AND c.deleted = false
+    """)
+    long countByPostId(@Param("postId") Long postId);
 
     Long countByMemberAndDeletedFalse(Member member);
+
 }
