@@ -184,6 +184,8 @@ public class PostService {
         if (!post.getMember().getId().equals(member.getId())) {
             throw new RuntimeException("삭제 권한 없음");
         }
+        post.getAttachmentPath().forEach(file -> file.setPost(null));
+        post.getAttachmentPath().clear();
         postRepository.delete(post);
     }
     @Transactional(readOnly = true)

@@ -52,10 +52,11 @@ public class Member extends BaseEntity {
     }
 
     public boolean isAdmin() {
-        if ("system".equals(email)) return true;
-        if ("admin".equals(email)) return true;
-
-        return false;
+        return email != null && (
+                email.equals("system")
+                        || email.equals("admin")
+                        || email.equals("test@com")
+        );
     }
 
     public Collection<? extends GrantedAuthority> getAuthorities() {

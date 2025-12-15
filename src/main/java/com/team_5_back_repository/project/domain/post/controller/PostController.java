@@ -14,6 +14,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -61,7 +63,11 @@ public class PostController {
     public ResponseEntity<RsData<Page<PostResponse>>> listPosts(
             @RequestParam PostType type,
             @RequestParam(required = false) String keyword,
-            Pageable pageable
+            @PageableDefault(
+                    size = 10,
+                    sort = "createdAt",
+                    direction = Sort.Direction.DESC
+            )Pageable pageable
 
     ) {
         Page<PostResponse> response =
