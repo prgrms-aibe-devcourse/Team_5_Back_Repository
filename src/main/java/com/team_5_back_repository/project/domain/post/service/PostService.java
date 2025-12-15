@@ -19,6 +19,8 @@ import com.team_5_back_repository.project.global.cloudstorage.entity.FileEntity;
 import com.team_5_back_repository.project.global.cloudstorage.repository.FileEntityRepository;
 import com.team_5_back_repository.project.global.cloudstorage.service.StorageService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -100,10 +102,11 @@ public class PostService {
     public Page<PostResponse> listPosts(
             PostType type,
             String keyword,
-            Pageable pageable
+            Pageable pageabl
     ) {
         Page<Post> posts;
 
+         Pageable pageable = PageRequest.of(pageabl.getPageNumber(), pageabl.getPageSize(), Sort.by(Sort.Direction.DESC, "createdAt"));
         boolean hasKeyword = keyword != null && !keyword.isBlank();
 
         if (type == PostType.ALL) {
