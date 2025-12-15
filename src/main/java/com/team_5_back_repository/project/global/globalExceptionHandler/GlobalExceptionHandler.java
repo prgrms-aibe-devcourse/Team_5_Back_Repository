@@ -40,11 +40,20 @@ public class GlobalExceptionHandler {
         response.setStatus(rsData.statusCode());
         return rsData;
     }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<RsData<Void>> handle(IllegalArgumentException e) {
         return new ResponseEntity<>(
                 new RsData<>("400-001", e.getMessage(), null),
                 HttpStatus.BAD_REQUEST
+        );
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<RsData<Void>> handle(IllegalStateException e) {
+        return new ResponseEntity<>(
+                new RsData<>("403-002", e.getMessage(), null),
+                HttpStatus.FORBIDDEN
         );
     }
 
