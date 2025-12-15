@@ -3,6 +3,7 @@ package com.team_5_back_repository.project.domain.post.service;
 
 import com.team_5_back_repository.project.domain.bookmark.entity.BookmarkType;
 import com.team_5_back_repository.project.domain.bookmark.repository.BookmarkRepository;
+import com.team_5_back_repository.project.domain.comment.repository.CommentRepository;
 import com.team_5_back_repository.project.domain.member.dto.dto.PostDto;
 import com.team_5_back_repository.project.domain.member.entity.Member;
 import com.team_5_back_repository.project.domain.member.repository.MemberRepository;
@@ -18,6 +19,7 @@ import com.team_5_back_repository.project.global.cloudstorage.entity.FileEntity;
 import com.team_5_back_repository.project.global.cloudstorage.repository.FileEntityRepository;
 import com.team_5_back_repository.project.global.cloudstorage.service.StorageService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -39,6 +41,7 @@ public class PostService {
     private final StorageService storageService;
     private final FileEntityRepository fileEntityRepository;
     private final BookmarkRepository bookmarkRepository;
+    private final CommentRepository commentRepository;
 
     public Long createPost(PostRequest request, List<MultipartFile> files, Long memberId) {
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new RuntimeException("사용자 없음"));
@@ -88,67 +91,34 @@ public class PostService {
                     post.getId()
             );
         }
+        long commentCount = commentRepository.countByPostId(post.getId());
 
-        return PostResponse.from(post, currentMemberId, isAdmin,isBookmarked);
+
+        return PostResponse.from(post, currentMemberId, isAdmin,isBookmarked,commentCount);
     }
     @Transactional(readOnly = true)
-    public Page<PostResponse> listPosts(PostType postType, Pageable pageable) {
-        Page<Post> posts = postRepository.findByPostType(postType, pageable);
+    public Page<PostResponse> listPosts(
+            PostType type,
+            String keyword,
+            Pageable pageable
+    ) {
+        Page<Post> posts;
 
-        Long currentMemberId = SecurityUtil.getCurrentUserId();
-        boolean isAdmin = SecurityUtil.isAdmin();
+        boolean hasKeyword = keyword != null && !keyword.isBlank();
 
-        Member currentUser = null;
-        if (currentMemberId != null) {
-            currentUser = memberRepository.findById(currentMemberId).orElse(null);
+        if (type == PostType.ALL) {
+            posts = hasKeyword
+                    ? postRepository.searchAll(keyword, pageable)
+                    : postRepository.findAll(pageable);
+        } else {
+            posts = hasKeyword
+                    ? postRepository.searchByType(type, keyword, pageable)
+                    : postRepository.findByPostType(pageable, type);
         }
 
-        Member finalCurrentUser = currentUser;
-
-        return posts.map(post -> {
-            boolean isBookmarked = false;
-
-            if (finalCurrentUser != null) {
-                isBookmarked = bookmarkRepository
-                        .existsByMemberAndBookmarkTypeAndTargetId(
-                                finalCurrentUser,
-                                BookmarkType.POST,
-                                post.getId()
-                        );
-            }
-
-            return PostResponse.from(post, currentMemberId, isAdmin, isBookmarked);
-        });
+        return mapToResponse(posts);
     }
 
-    @Transactional(readOnly = true)
-    public Page<PostResponse> listAllPosts(Pageable pageable) {
-        Page<Post> posts = postRepository.findAll(pageable);
-
-        Long currentMemberId = SecurityUtil.getCurrentUserId();
-        boolean isAdmin = SecurityUtil.isAdmin();
-        Member currentUser = null;
-        if (currentMemberId != null) {
-            currentUser = memberRepository.findById(currentMemberId).orElse(null);
-        }
-
-        Member finalCurrentUser = currentUser;
-
-        return posts.map(post -> {
-            boolean isBookmarked = false;
-
-            if (finalCurrentUser != null) {
-                isBookmarked = bookmarkRepository
-                        .existsByMemberAndBookmarkTypeAndTargetId(
-                                finalCurrentUser,
-                                BookmarkType.POST,
-                                post.getId()
-                        );
-            }
-
-            return PostResponse.from(post, currentMemberId, isAdmin, isBookmarked);
-        });
-    }
     public PostResponse updatePost(Long id, PostRequest request, Long memberId) {
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new RuntimeException("사용자 없음"));
         Post post = postRepository.findById(id)
@@ -165,7 +135,7 @@ public class PostService {
                 fileEntityRepository.findByImgUrl(url).ifPresent(fe -> {
                     fe.setPost(post);
                     newUrls.add(fe);
-                });;
+                });
             }
         }
 
@@ -201,7 +171,8 @@ public class PostService {
                             post.getId()
                     );
         }
-        return PostResponse.from(post, currentMemberId, isAdmin, isBookmarked);
+        long commentCount = commentRepository.countByPostId(post.getId());
+        return PostResponse.from(post, currentMemberId, isAdmin, isBookmarked,commentCount);
     }
 
     @Transactional
@@ -214,6 +185,45 @@ public class PostService {
             throw new RuntimeException("삭제 권한 없음");
         }
         postRepository.delete(post);
+    }
+    @Transactional(readOnly = true)
+    public Page<PostResponse> listHotPosts(String keyword, Pageable pageable) {
+        Page<Post> posts;
+
+        if (keyword != null && !keyword.isBlank()) {
+            posts = postRepository.searchHot(keyword, pageable);
+        } else {
+            posts = postRepository.findByIsHotTrue(pageable);
+        }
+
+        return mapToResponse(posts);
+    }
+
+    private Page<PostResponse> mapToResponse(Page<Post> posts) {
+        Long currentMemberId = SecurityUtil.getCurrentUserId();
+        boolean isAdmin = SecurityUtil.isAdmin();
+
+        Member currentUser = currentMemberId != null
+                ? memberRepository.findById(currentMemberId).orElse(null)
+                : null;
+
+        return posts.map(post -> {
+            boolean isBookmarked = currentUser != null &&
+                    bookmarkRepository.existsByMemberAndBookmarkTypeAndTargetId(
+                            currentUser,
+                            BookmarkType.POST,
+                            post.getId()
+                    );
+            long commentCount = commentRepository.countByPostId(post.getId());
+
+            return PostResponse.from(
+                    post,
+                    currentMemberId,
+                    isAdmin,
+                    isBookmarked,
+                    commentCount
+            );
+        });
     }
 
     private Set<Tag> processTags(Set<String> tagNames) {

@@ -74,7 +74,7 @@ public class SecurityConfig {
         // 허용할 오리진 설정
         configuration.setAllowedOrigins(
                 List.of("http://localhost:3000",
-                        "https://resreqonelifefront.vercel.app",
+                        "https://www.onelife.mwan.site",
                         "https://onelife.mwan.site"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE"));
 

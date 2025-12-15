@@ -60,17 +60,16 @@ public class PostController {
             description = "게시글 타입별 목록 조회 (페이징 처리 가능)")
     public ResponseEntity<RsData<Page<PostResponse>>> listPosts(
             @RequestParam PostType type,
+            @RequestParam(required = false) String keyword,
             Pageable pageable
 
     ) {
-        Page<PostResponse> response;
+        Page<PostResponse> response =
+                postService.listPosts(type, keyword, pageable);
 
-        if (type == PostType.ALL) {
-            response = postService.listAllPosts(pageable);
-        } else {
-            response = postService.listPosts(type, pageable);
-        }
-        return ResponseEntity.ok(new RsData<>("200-1", "목록 조회 성공", response));
+        return ResponseEntity.ok(
+                new RsData<>("200-1", "목록 조회 성공", response)
+        );
     }
 
     @PutMapping(value = "/{id}" , consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -101,5 +100,12 @@ public class PostController {
     public ResponseEntity<RsData<Void>> increaseView(@PathVariable Long id) {
         postService.increaseView(id);
         return ResponseEntity.ok(new RsData<>("200-1", "조회수 증가", null));
+    }
+    @GetMapping("/hot")
+    public ResponseEntity<RsData<Page<PostResponse>>> hotPosts(
+            @RequestParam(required = false) String keyword,
+            Pageable pageable) {
+        Page<PostResponse> posts = postService.listHotPosts(keyword, pageable);
+        return ResponseEntity.ok(new RsData<>("200-1", "인기 게시글", posts));
     }
 }
