@@ -20,11 +20,17 @@ public interface GroupBuyingPostRepository extends JpaRepository<GroupBuyingPost
     // 지역별 조회
     List<GroupBuyingPost> findByRegion(String region);
 
+    // "식사" 검색 → "식사", "식사동", "고양시 식사동" 모두 찾음
+    List<GroupBuyingPost> findByRegionContaining(String region);
+
     // 상태별 조회
     List<GroupBuyingPost> findByStatus(GroupBuyingStatus status);
 
     // 지역 + 상태별 조회
     List<GroupBuyingPost> findByRegionAndStatus(String region, GroupBuyingStatus status);
+
+    // 부분 검색 + 상태
+    List<GroupBuyingPost> findByRegionContainingAndStatus(String region, GroupBuyingStatus status);
 
     // 작성자별 조회
     List<GroupBuyingPost> findByCreatorId(Long creatorId);

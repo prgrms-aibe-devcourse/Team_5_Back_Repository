@@ -316,10 +316,13 @@ public class GroupBuyingService {
     public GroupBuyingListResponse getPosts(String region, GroupBuyingStatus status) {
         List<GroupBuyingPost> posts;
 
-        if (region != null && status != null) {
-            posts = postRepository.findByRegionAndStatus(region, status);
-        } else if (region != null) {
-            posts = postRepository.findByRegion(region);
+        if (region != null && !region.trim().isEmpty() && status != null) {
+            posts = postRepository.findByRegionContainingAndStatus(
+                    region.trim(),
+                    status);
+        } else if (region != null && !region.trim().isEmpty()) {
+            posts = postRepository.findByRegionContaining(
+                    region.trim());
         } else if (status != null) {
             posts = postRepository.findByStatus(status);
         } else {
