@@ -13,8 +13,8 @@ public class PostDto {
     private String title;
     private PostType postType;
     private Long viewCount;
-    private Integer likeCount;
-    private Long commentCount;
+    private int likeCount;
+    private long commentCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
